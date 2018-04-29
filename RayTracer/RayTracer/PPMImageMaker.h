@@ -1,5 +1,8 @@
 #pragma once
 
+// generate a PPM image file that can be reviewed by :
+// http://paulcuth.me.uk/netpbm-viewer/
+
 class PPMImageMaker
 {
 public:

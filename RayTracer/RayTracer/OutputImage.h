@@ -10,6 +10,8 @@ public:
 	void			InitAsRainbow();
 	void			InitAsRed();
 
+	void			OutputToPPM();
+
 	unsigned		m_width{ 0 };
 	unsigned		m_height{ 0 };
 	unsigned		m_dataSizeInByte{ 0 };
