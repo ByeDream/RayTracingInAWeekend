@@ -1,10 +1,10 @@
 #include "stdafx.h"
 #include "OutputImage.h"
-#include "PPMImageMaker.h"
 
-OutputImage::OutputImage(unsigned width, unsigned height)
+OutputImage::OutputImage(unsigned width, unsigned height, const char *name)
 	: m_width(width)
 	, m_height(height)
+	, m_name(name)
 {
 	m_dataSizeInByte = m_width * m_height * m_pixelSizeInByte;
 	if (m_dataSizeInByte)
@@ -49,9 +49,4 @@ void OutputImage::InitAsRed()
 		unsigned *baseOffset = reinterpret_cast<unsigned *>(m_data + i * m_pixelSizeInByte);
 		*(baseOffset) = 0xFF0000FF;
 	}
-}
-
-void OutputImage::OutputToPPM()
-{
-	PPMImageMaker::OutputRGBA8ToFile("output.ppm", m_width, m_height, m_data, m_dataSizeInByte);
 }

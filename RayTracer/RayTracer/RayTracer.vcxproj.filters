@@ -36,6 +36,9 @@
     <ClInclude Include="d3dx12.h">
       <Filter>Source\ImageViewer</Filter>
     </ClInclude>
+    <ClInclude Include="InputListener.h">
+      <Filter>Source\ImageViewer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracer.cpp">
@@ -51,6 +54,9 @@
       <Filter>Source\ImageViewer</Filter>
     </ClCompile>
     <ClCompile Include="D3D12Viewer.cpp">
+      <Filter>Source\ImageViewer</Filter>
+    </ClCompile>
+    <ClCompile Include="InputListener.cpp">
       <Filter>Source\ImageViewer</Filter>
     </ClCompile>
   </ItemGroup>

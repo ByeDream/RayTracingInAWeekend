@@ -1,36 +1,62 @@
 #pragma once
 
 class OutputImage;
+class InputListener;
+
+enum D3D12ViewerMode
+{
+	VMODE_SCENE_VIEWER = 0,
+	VMODE_IMAGE_VIEWER,
+	// TODO add more
+
+	VMODE_COUNT
+};
+
+const std::string D3D12ViewerModeNames[VMODE_COUNT] =
+{
+	"Scene Viewer",
+	"Image Viewer",
+};
 
 class D3D12Viewer
 {
 public:
-	D3D12Viewer(HWND hwnd, UINT32 width, UINT32 height, const OutputImage *outputImage);
+	D3D12Viewer(HWND hwnd, UINT32 width, UINT32 height, OutputImage *outputImage, InputListener *inputListener);
 	~D3D12Viewer();
 
 	void										OnInit();
 	void										OnUpdate();
 	void										OnRender();
 	void										OnDestroy();
-	void										OnKeyDown(UINT8 keyCode);
-	void										OnKeyUp(UINT8 keyCode);
+	void										HelpInfo();
 
 private:
 	void										LoadPipeline();
 	void										LoadAssets();
-	void										PopulateCommandList();
+	void										ExecuteCommandList();
 	void										WaitForGpu();
-	void										MoveToNextFrame();
+	void										BeginDraw();
+	void										EndDraw();
 
+	void										UploadImage();
+	void										ResolveImage();
+	void										BeginBackSurface(BOOL clear = TRUE);
+	void										EndBackSurface();
+
+	void										SwitchMode(D3D12ViewerMode mode);
 private:
+	
 	static const UINT32							FrameCount = 3;
 
 	HWND										m_hwnd;
 	UINT32										m_frameIndex{ 0 };
 	UINT32										m_width{ 1028 };
 	UINT32										m_height{ 720 };
-	float										m_aspectRatio;
-	const OutputImage *							m_image;
+	float										m_aspectRatio{ 0.0f };
+	OutputImage *								m_image{ nullptr };
+	InputListener *								m_inputListener{ nullptr };
+	D3D12ViewerMode								m_mode{ VMODE_SCENE_VIEWER };
+	BOOL										m_isOutputImageDirty{ FALSE };
 
 	CD3DX12_VIEWPORT							m_viewport;
 	CD3DX12_RECT								m_scissorRect;

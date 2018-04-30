@@ -1,7 +1,10 @@
 #include "stdafx.h"
 #include "D3D12Viewer.h"
 #include "OutputImage.h"
+#include "InputListener.h"
+#include "PPMImageMaker.h"
 
+//Helpers
 namespace
 {
 	inline void ThrowIfFailed(HRESULT hr)
@@ -39,10 +42,41 @@ namespace
 
 		*ppAdapter = adapter.Detach();
 	}
+
+	// Assign a name to the object to aid with debugging.
+#if defined(_DEBUG)
+	inline void SetName(ID3D12Object* pObject, LPCWSTR name)
+	{
+		pObject->SetName(name);
+	}
+	inline void SetNameIndexed(ID3D12Object* pObject, LPCWSTR name, UINT index)
+	{
+		WCHAR fullName[50];
+		if (swprintf_s(fullName, L"%s[%u]", name, index) > 0)
+		{
+			pObject->SetName(fullName);
+		}
+	}
+#else
+	inline void SetName(ID3D12Object*, LPCWSTR)
+	{
+	}
+	inline void SetNameIndexed(ID3D12Object*, LPCWSTR, UINT)
+	{
+	}
+#endif
+
+	// Naming helper for ComPtr<T>.
+	// Assigns the name of the variable as the name of the object.
+	// The indexed variant will include the index in the name of the object.
+#define NAME_D3D12_OBJECT(x) SetName(x.Get(), L#x)
+#define NAME_D3D12_OBJECT_INDEXED(x, n) SetNameIndexed(x[n].Get(), L#x, n)
 }
 
 
-D3D12Viewer::D3D12Viewer(HWND hwnd, UINT32 width, UINT32 height, const OutputImage *outputImage)
+using namespace std;
+
+D3D12Viewer::D3D12Viewer(HWND hwnd, UINT32 width, UINT32 height, OutputImage *outputImage, InputListener *inputListener)
 	: m_hwnd(hwnd)
 	, m_width(width)
 	, m_height(height)
@@ -50,6 +84,7 @@ D3D12Viewer::D3D12Viewer(HWND hwnd, UINT32 width, UINT32 height, const OutputIma
 	, m_scissorRect(0, 0, static_cast<LONG>(width), static_cast<LONG>(height))
 	, m_fenceValues{}
 	, m_image(outputImage)
+	, m_inputListener(inputListener)
 {
 	m_aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 }
@@ -59,30 +94,108 @@ D3D12Viewer::~D3D12Viewer()
 
 }
 
+void D3D12Viewer::HelpInfo()
+{
+	cout << "=========================================" << endl;
+	cout << "[Hotkeys]" << endl;
+	cout << "  [h] Display this message." << endl;
+	cout << "  [o] Save output image to PPM file." << endl;
+	cout << "  [r] Render homemake ray tracing to output image and switch to image viewer mode." << endl;
+	cout << "  Scene viewer mode:" << endl;
+	cout << "    [i] Switch to image viewer mode." << endl;
+	cout << "  Image viewer mode:" << endl;
+	cout << "    [esc] Switch back to Scene viewer mode." << endl;
+	cout << "[Current Mode] " << D3D12ViewerModeNames[m_mode] << endl;
+	cout << "=========================================" << endl;
+}
+
 void D3D12Viewer::OnInit()
 {
 	LoadPipeline();
 	LoadAssets();
+
+	m_inputListener->RegisterKey(VK_ESCAPE);
+	m_inputListener->RegisterKey('O');
+	m_inputListener->RegisterKey('I');
+	m_inputListener->RegisterKey('H');
+	m_inputListener->RegisterKey('R');
+
+	/*
+	m_inputListener->RegisterKey('W');
+	m_inputListener->RegisterKey('A');
+	m_inputListener->RegisterKey('S');
+	m_inputListener->RegisterKey('D');
+	m_inputListener->RegisterKey(VK_LEFT);
+	m_inputListener->RegisterKey(VK_UP);
+	m_inputListener->RegisterKey(VK_RIGHT);
+	m_inputListener->RegisterKey(VK_DOWN);
+	*/
 }
 
 void D3D12Viewer::OnUpdate()
 {
+	if (m_inputListener->WhenReleaseKey('O') && m_image)
+	{
+		string ppmFileName = m_image->m_name + ".ppm";
+		PPMImageMaker::OutputRGBA8ToFile(ppmFileName.c_str(), m_image->m_width, m_image->m_height, m_image->m_data, m_image->m_dataSizeInByte);
+	}
 
+	if (m_inputListener->WhenReleaseKey('H'))
+	{
+		HelpInfo();
+	}
+
+	// TODO
+	if (m_inputListener->WhenReleaseKey('R'))
+	{
+		cout << "Render homemake ray tracing to output image ..." << endl;
+		m_image->InitAsRainbow();
+		cout << "Done" << endl;
+		m_isOutputImageDirty = TRUE;
+		SwitchMode(VMODE_IMAGE_VIEWER);
+	}
+
+	// mode switch
+	if (m_mode != VMODE_SCENE_VIEWER)
+	{
+		if (m_inputListener->WhenReleaseKey(VK_ESCAPE))
+		{
+			SwitchMode(VMODE_SCENE_VIEWER);
+		}
+	}
+	else
+	{
+		if (m_inputListener->WhenReleaseKey('I'))
+		{
+			SwitchMode(VMODE_IMAGE_VIEWER);
+		}
+		// TODO :add more
+	}
 }
 
 void D3D12Viewer::OnRender()
 {
-	// Record all the commands we need to render the scene into the command list.
-	PopulateCommandList();
-
-	// Execute the command list.
-	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
-	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
-	// Present the frame.
-	ThrowIfFailed(m_swapChain->Present(1, 0));
-
-	MoveToNextFrame();
+	BeginDraw();
+	{
+		if (m_isOutputImageDirty)
+		{
+			UploadImage();
+		}
+		BeginBackSurface(TRUE); // with clear
+		{
+			switch (m_mode)
+			{
+			case VMODE_IMAGE_VIEWER:
+				ResolveImage();
+				break;
+			default:
+				// TODO
+				break;
+			}
+		}
+		EndBackSurface();
+	}
+	EndDraw();
 }
 
 void D3D12Viewer::OnDestroy()
@@ -94,18 +207,10 @@ void D3D12Viewer::OnDestroy()
 	CloseHandle(m_fenceEvent);
 }
 
-void D3D12Viewer::OnKeyDown(UINT8 keyCode)
-{
-
-}
-
-void D3D12Viewer::OnKeyUp(UINT8 keyCode)
-{
-
-}
-
 void D3D12Viewer::LoadPipeline()
 {
+	cout << "[D3D12Viewer] LoadPipeline" << endl;
+
 	UINT32 dxgiFactoryFlags = 0;
 #if defined(_DEBUG)
 	{
@@ -130,12 +235,14 @@ void D3D12Viewer::LoadPipeline()
 		D3D_FEATURE_LEVEL_11_0,
 		IID_PPV_ARGS(&m_device)
 	));
+	NAME_D3D12_OBJECT(m_device);
 
 	// Describe and create the command queue.
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 	ThrowIfFailed(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
+	NAME_D3D12_OBJECT(m_commandQueue);
 
 	// Describe and create the swap chain.
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
@@ -172,6 +279,7 @@ void D3D12Viewer::LoadPipeline()
 		rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 		rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 		ThrowIfFailed(m_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
+		NAME_D3D12_OBJECT(m_rtvHeap);
 
 		m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
@@ -181,6 +289,7 @@ void D3D12Viewer::LoadPipeline()
 		srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		ThrowIfFailed(m_device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap)));
+		NAME_D3D12_OBJECT(m_srvHeap);
 	}
 
 	// Create frame resources.
@@ -191,10 +300,12 @@ void D3D12Viewer::LoadPipeline()
 		for (UINT n = 0; n < FrameCount; n++)
 		{
 			ThrowIfFailed(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
+			NAME_D3D12_OBJECT_INDEXED(m_renderTargets, n);
 			m_device->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
 			rtvHandle.Offset(1, m_rtvDescriptorSize);
 		
 			ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocators[n])));
+			NAME_D3D12_OBJECT_INDEXED(m_commandAllocators, n);
 		}
 	}
 
@@ -203,6 +314,8 @@ void D3D12Viewer::LoadPipeline()
 
 void D3D12Viewer::LoadAssets()
 {
+	cout << "[D3D12Viewer] LoadAssets" << endl;
+
 	// Create the root signature.
 	{
 		D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
@@ -216,7 +329,7 @@ void D3D12Viewer::LoadAssets()
 		}
 
 		CD3DX12_DESCRIPTOR_RANGE1 ranges[1];
-		ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+		ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE); // not D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC, this texture will be updated sometime
 
 		CD3DX12_ROOT_PARAMETER1 rootParameters[1];
 		rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
@@ -244,6 +357,7 @@ void D3D12Viewer::LoadAssets()
 		ComPtr<ID3DBlob> error;
 		ThrowIfFailed(D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, featureData.HighestVersion, &signature, &error));
 		ThrowIfFailed(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)));
+		NAME_D3D12_OBJECT(m_rootSignature);
 	}
 
 	// Create the pipeline state, which includes compiling and loading shaders.
@@ -284,10 +398,12 @@ void D3D12Viewer::LoadAssets()
 		psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 		psoDesc.SampleDesc.Count = 1;
 		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
+		NAME_D3D12_OBJECT(m_pipelineState);
 	}
 
 	// Create the command list.
 	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[m_frameIndex].Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
+	NAME_D3D12_OBJECT(m_commandList);
 
 
 	// Note: ComPtr's are CPU objects but this resource needs to stay in scope until
@@ -320,6 +436,7 @@ void D3D12Viewer::LoadAssets()
 			D3D12_RESOURCE_STATE_COPY_DEST,
 			nullptr,
 			IID_PPV_ARGS(&m_vertexBuffer)));
+		NAME_D3D12_OBJECT(m_vertexBuffer);
 
 		// Create the GPU upload buffer.
 		ThrowIfFailed(m_device->CreateCommittedResource(
@@ -329,6 +446,7 @@ void D3D12Viewer::LoadAssets()
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&vertexUploadHeap)));
+		NAME_D3D12_OBJECT(vertexUploadHeap);
 
 		// Copy the triangle data to the vertex buffer.
 		UINT8* pVertexDataBegin;
@@ -372,6 +490,7 @@ void D3D12Viewer::LoadAssets()
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 			nullptr,
 			IID_PPV_ARGS(&m_texture)));
+		NAME_D3D12_OBJECT(m_texture);
 
 		m_uploadBufferSize = GetRequiredIntermediateSize(m_texture.Get(), 0, 1);
 
@@ -383,6 +502,7 @@ void D3D12Viewer::LoadAssets()
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&m_textureUploadHeap)));
+		NAME_D3D12_OBJECT(m_textureUploadHeap);
 
 		// Describe and create a SRV for the texture.
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -394,13 +514,12 @@ void D3D12Viewer::LoadAssets()
 	}
 
 	// Close the command list and execute it to begin the initial GPU setup.
-	ThrowIfFailed(m_commandList->Close());
-	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
-	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+	ExecuteCommandList();
 
 	// Create synchronization objects and wait until assets have been uploaded to the GPU.
 	{
 		ThrowIfFailed(m_device->CreateFence(m_fenceValues[m_frameIndex], D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
+		NAME_D3D12_OBJECT(m_fence);
 		m_fenceValues[m_frameIndex] = 1;
 
 		// Create an event handle to use for frame synchronization.
@@ -417,60 +536,11 @@ void D3D12Viewer::LoadAssets()
 	}
 }
 
-
-void D3D12Viewer::PopulateCommandList()
+void D3D12Viewer::ExecuteCommandList()
 {
-	// Command list allocators can only be reset when the associated 
-	// command lists have finished execution on the GPU; apps should use 
-	// fences to determine GPU execution progress.
-	ThrowIfFailed(m_commandAllocators[m_frameIndex]->Reset());
-
-	// However, when ExecuteCommandList() is called on a particular command 
-	// list, that command list can then be reset at any time and must be before 
-	// re-recording.
-	ThrowIfFailed(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), m_pipelineState.Get()));
-
-
-	// Copy data to the intermediate upload heap and then schedule a copy
-	// from the upload heap to the Texture2D.
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST));
-
-	D3D12_SUBRESOURCE_DATA textureData = {};
-	textureData.pData = m_image->m_data;
-	textureData.RowPitch = m_image->m_width * m_image->m_pixelSizeInByte;
-	textureData.SlicePitch = textureData.RowPitch * m_image->m_height;
-
-	UpdateSubresources(m_commandList.Get(), m_texture.Get(), m_textureUploadHeap.Get(), 0, 0, 1, &textureData);
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
-
-
-	// Set necessary state.
-	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
-	ID3D12DescriptorHeap* ppHeaps[] = { m_srvHeap.Get() };
-	m_commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-
-	m_commandList->SetGraphicsRootDescriptorTable(0, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
-	m_commandList->RSSetViewports(1, &m_viewport);
-	m_commandList->RSSetScissorRects(1, &m_scissorRect);
-
-	
-	// Indicate that the back buffer will be used as a render target.
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
-	m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
-
-	// Record commands.
-	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
-	m_commandList->DrawInstanced(3, 1, 0, 0);
-
-	// Indicate that the back buffer will now be used to present.
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
-
 	ThrowIfFailed(m_commandList->Close());
+	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
+	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 }
 
 void D3D12Viewer::WaitForGpu()
@@ -486,8 +556,19 @@ void D3D12Viewer::WaitForGpu()
 	m_fenceValues[m_frameIndex]++;
 }
 
-void D3D12Viewer::MoveToNextFrame()
+void D3D12Viewer::BeginDraw() 
 {
+	// Command list allocators can only be reset when the associated 
+	// command lists have finished execution on the GPU; apps should use 
+	// fences to determine GPU execution progress.
+	ThrowIfFailed(m_commandAllocators[m_frameIndex]->Reset());
+}
+
+void D3D12Viewer::EndDraw()
+{
+	// Present the frame.
+	ThrowIfFailed(m_swapChain->Present(1, 0));
+
 	// Schedule a Signal command in the queue.
 	const UINT64 currentFenceValue = m_fenceValues[m_frameIndex];
 	ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), currentFenceValue));
@@ -504,5 +585,90 @@ void D3D12Viewer::MoveToNextFrame()
 
 	// Set the fence value for the next frame.
 	m_fenceValues[m_frameIndex] = currentFenceValue + 1;
+}
+
+
+void D3D12Viewer::UploadImage()
+{
+	ThrowIfFailed(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
+
+	// Copy data to the intermediate upload heap and then schedule a copy
+	// from the upload heap to the Texture2D.
+	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST));
+
+	D3D12_SUBRESOURCE_DATA textureData = {};
+	textureData.pData = m_image->m_data;
+	textureData.RowPitch = m_image->m_width * m_image->m_pixelSizeInByte;
+	textureData.SlicePitch = textureData.RowPitch * m_image->m_height;
+
+	UpdateSubresources(m_commandList.Get(), m_texture.Get(), m_textureUploadHeap.Get(), 0, 0, 1, &textureData);
+	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+
+
+	ExecuteCommandList();
+}
+
+void D3D12Viewer::ResolveImage()
+{
+	ThrowIfFailed(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), m_pipelineState.Get()));
+
+	// Set necessary state.
+	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+	ID3D12DescriptorHeap* ppHeaps[] = { m_srvHeap.Get() };
+	m_commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+
+	m_commandList->SetGraphicsRootDescriptorTable(0, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+	m_commandList->RSSetViewports(1, &m_viewport);
+	m_commandList->RSSetScissorRects(1, &m_scissorRect);
+
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle1(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
+	m_commandList->OMSetRenderTargets(1, &rtvHandle1, FALSE, nullptr);
+
+	// Record commands.
+	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
+	m_commandList->DrawInstanced(3, 1, 0, 0);
+
+	ExecuteCommandList();
+}
+
+void D3D12Viewer::BeginBackSurface(BOOL clear)
+{
+	ThrowIfFailed(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
+
+	// Indicate that the back buffer will be used as a render target.
+	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+	if (clear)
+	{
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
+		m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+
+		const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+		m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	}
+	
+
+	ExecuteCommandList();
+}
+
+void D3D12Viewer::EndBackSurface()
+{
+	ThrowIfFailed(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
+
+	// Indicate that the back buffer will now be used to present.
+	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+	ExecuteCommandList();
+}
+
+void D3D12Viewer::SwitchMode(D3D12ViewerMode mode)
+{
+	if (mode != m_mode)
+	{
+		m_mode = mode;
+		cout << "[Mode] " << D3D12ViewerModeNames[m_mode] << endl;
+	}
 }
 

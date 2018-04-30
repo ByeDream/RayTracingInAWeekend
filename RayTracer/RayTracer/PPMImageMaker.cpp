@@ -8,6 +8,8 @@ using namespace std;
 
 void PPMImageMaker::OutputRGBA8ToFile(const char *fileName, unsigned imageWidth, unsigned imageHeight, const unsigned char *rgba8PixelData, unsigned dataSizeInByte)
 {
+	cout << "[PPMImageMaker] Save output image to PPM file: " << fileName << " ..." << endl;
+
 	assert(rgba8PixelData && "invaild data ptr");
 	const unsigned pixelSize = 4; //rgba8 format
 	if (dataSizeInByte)
@@ -41,4 +43,6 @@ void PPMImageMaker::OutputRGBA8ToFile(const char *fileName, unsigned imageWidth,
 	}
 
 	ofs.close();
+
+	cout << "[PPMImageMaker] Done" << endl;
 }
