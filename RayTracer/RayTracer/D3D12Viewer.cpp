@@ -2,7 +2,7 @@
 #include "D3D12Viewer.h"
 #include "OutputImage.h"
 #include "InputListener.h"
-#include "PPMImageMaker.h"
+#include "HomemadeRayTracer.h"
 
 //Helpers
 namespace
@@ -76,17 +76,18 @@ namespace
 
 using namespace std;
 
-D3D12Viewer::D3D12Viewer(HWND hwnd, UINT32 width, UINT32 height, OutputImage *outputImage, InputListener *inputListener)
+D3D12Viewer::D3D12Viewer(HWND hwnd, OutputImage *outputImage, InputListener *inputListener, HomemadeRayTracer *HMRayTracer)
 	: m_hwnd(hwnd)
-	, m_width(width)
-	, m_height(height)
-	, m_viewport(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height))
-	, m_scissorRect(0, 0, static_cast<LONG>(width), static_cast<LONG>(height))
+	, m_width(outputImage->m_width)
+	, m_height(outputImage->m_height)
+	, m_viewport(0.0f, 0.0f, static_cast<float>(outputImage->m_width), static_cast<float>(outputImage->m_height))
+	, m_scissorRect(0, 0, static_cast<LONG>(outputImage->m_width), static_cast<LONG>(outputImage->m_height))
 	, m_fenceValues{}
 	, m_image(outputImage)
 	, m_inputListener(inputListener)
+	, m_HMRayTracer(HMRayTracer)
 {
-	m_aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+	m_aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
 }
 
 D3D12Viewer::~D3D12Viewer()
@@ -134,10 +135,9 @@ void D3D12Viewer::OnInit()
 
 void D3D12Viewer::OnUpdate()
 {
-	if (m_inputListener->WhenReleaseKey('O') && m_image)
+	if (m_inputListener->WhenReleaseKey('O'))
 	{
-		string ppmFileName = m_image->m_name + ".ppm";
-		PPMImageMaker::OutputRGBA8ToFile(ppmFileName.c_str(), m_image->m_width, m_image->m_height, m_image->m_data, m_image->m_dataSizeInByte);
+		m_image->Output();
 	}
 
 	if (m_inputListener->WhenReleaseKey('H'))
@@ -145,12 +145,9 @@ void D3D12Viewer::OnUpdate()
 		HelpInfo();
 	}
 
-	// TODO
 	if (m_inputListener->WhenReleaseKey('R'))
 	{
-		cout << "Render homemake ray tracing to output image ..." << endl;
-		m_image->InitAsRainbow();
-		cout << "Done" << endl;
+		m_HMRayTracer->Trace(m_image);
 		m_isOutputImageDirty = TRUE;
 		SwitchMode(VMODE_IMAGE_VIEWER);
 	}

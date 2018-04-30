@@ -157,6 +157,8 @@
   <ItemGroup>
     <ClInclude Include="D3D12Viewer.h" />
     <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="HomemadeRayTracer.h" />
+    <ClInclude Include="Ray.h" />
     <ClInclude Include="InputListener.h" />
     <ClInclude Include="OutputImage.h" />
     <ClInclude Include="PPMImageMaker.h" />
@@ -164,9 +166,11 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="Vec3.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12Viewer.cpp" />
+    <ClCompile Include="HomemadeRayTracer.cpp" />
     <ClCompile Include="InputListener.cpp" />
     <ClCompile Include="OutputImage.cpp" />
     <ClCompile Include="PPMImageMaker.cpp" />

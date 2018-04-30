@@ -1,19 +1,24 @@
 #pragma once
 
+struct Vec3;
+
 //RGBA8 bitmap
 class OutputImage
 {
 public:
-	OutputImage(unsigned width, unsigned height, const char *name);
+	OutputImage(UINT32 width, UINT32 height, const char *name);
 	~OutputImage();
 
-	void			InitAsRainbow();
-	void			InitAsRed();
+	void			RenderAsRainbow();
+	void			RenderAsRed();
+	void            Render(const Vec3 *pixels, UINT32 pixelCount = 0);
 
-	unsigned		m_width{ 0 };
-	unsigned		m_height{ 0 };
-	unsigned		m_dataSizeInByte{ 0 };
-	unsigned		m_pixelSizeInByte{ 4 };
-	unsigned char *	m_data{ nullptr };
+	void			Output();
+
+	UINT32			m_width{ 0 };
+	UINT32			m_height{ 0 };
+	UINT64			m_dataSizeInByte{ 0 };
+	UINT32			m_pixelSizeInByte{ 4 };
+	UINT8 *			m_data{ nullptr };
 	std::string		m_name{};
 };

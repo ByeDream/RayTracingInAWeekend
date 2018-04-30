@@ -6,5 +6,5 @@
 class PPMImageMaker
 {
 public:
-	static void OutputRGBA8ToFile(const char *fileName, unsigned imageWidth, unsigned imageHeight, const unsigned char *rgbPixelData, unsigned dataSizeInByte = 0);
+	static void OutputRGBA8ToFile(const char *fileName, UINT32 imageWidth, UINT32 imageHeight, const UINT8 *rgbPixelData, UINT64 dataSizeInByte = 0);
 };

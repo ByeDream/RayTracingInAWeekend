@@ -2,6 +2,7 @@
 
 class OutputImage;
 class InputListener;
+class HomemadeRayTracer;
 
 enum D3D12ViewerMode
 {
@@ -21,7 +22,7 @@ const std::string D3D12ViewerModeNames[VMODE_COUNT] =
 class D3D12Viewer
 {
 public:
-	D3D12Viewer(HWND hwnd, UINT32 width, UINT32 height, OutputImage *outputImage, InputListener *inputListener);
+	D3D12Viewer(HWND hwnd, OutputImage *outputImage, InputListener *inputListener, HomemadeRayTracer *HMRayTracer);
 	~D3D12Viewer();
 
 	void										OnInit();
@@ -55,6 +56,7 @@ private:
 	float										m_aspectRatio{ 0.0f };
 	OutputImage *								m_image{ nullptr };
 	InputListener *								m_inputListener{ nullptr };
+	HomemadeRayTracer *							m_HMRayTracer{ nullptr };
 	D3D12ViewerMode								m_mode{ VMODE_SCENE_VIEWER };
 	BOOL										m_isOutputImageDirty{ FALSE };
 

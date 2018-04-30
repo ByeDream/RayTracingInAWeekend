@@ -10,6 +10,15 @@
     <Filter Include="Assets">
       <UniqueIdentifier>{a3b5e30f-0d51-44fe-9db9-c6d200ac5db9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\HMRayTracer">
+      <UniqueIdentifier>{c8ac98e5-94f4-4295-9f30-f277c56b977d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Image">
+      <UniqueIdentifier>{cf812236-3ff2-4399-a4e3-ab9174c34a5c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Utils">
+      <UniqueIdentifier>{090691d5-26a6-4d06-8156-3853f246bc53}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RayTracer.h">
@@ -24,12 +33,6 @@
     <ClInclude Include="targetver.h">
       <Filter>Source</Filter>
     </ClInclude>
-    <ClInclude Include="PPMImageMaker.h">
-      <Filter>Source\ImageViewer</Filter>
-    </ClInclude>
-    <ClInclude Include="OutputImage.h">
-      <Filter>Source\ImageViewer</Filter>
-    </ClInclude>
     <ClInclude Include="D3D12Viewer.h">
       <Filter>Source\ImageViewer</Filter>
     </ClInclude>
@@ -39,6 +42,21 @@
     <ClInclude Include="InputListener.h">
       <Filter>Source\ImageViewer</Filter>
     </ClInclude>
+    <ClInclude Include="Ray.h">
+      <Filter>Source\HMRayTracer</Filter>
+    </ClInclude>
+    <ClInclude Include="HomemadeRayTracer.h">
+      <Filter>Source\HMRayTracer</Filter>
+    </ClInclude>
+    <ClInclude Include="OutputImage.h">
+      <Filter>Source\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="PPMImageMaker.h">
+      <Filter>Source\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Vec3.h">
+      <Filter>Source\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracer.cpp">
@@ -47,17 +65,20 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="PPMImageMaker.cpp">
-      <Filter>Source\ImageViewer</Filter>
-    </ClCompile>
-    <ClCompile Include="OutputImage.cpp">
-      <Filter>Source\ImageViewer</Filter>
-    </ClCompile>
     <ClCompile Include="D3D12Viewer.cpp">
       <Filter>Source\ImageViewer</Filter>
     </ClCompile>
     <ClCompile Include="InputListener.cpp">
       <Filter>Source\ImageViewer</Filter>
+    </ClCompile>
+    <ClCompile Include="HomemadeRayTracer.cpp">
+      <Filter>Source\HMRayTracer</Filter>
+    </ClCompile>
+    <ClCompile Include="OutputImage.cpp">
+      <Filter>Source\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="PPMImageMaker.cpp">
+      <Filter>Source\Image</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

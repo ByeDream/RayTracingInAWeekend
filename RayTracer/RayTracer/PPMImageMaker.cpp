@@ -6,15 +6,15 @@
 
 using namespace std;
 
-void PPMImageMaker::OutputRGBA8ToFile(const char *fileName, unsigned imageWidth, unsigned imageHeight, const unsigned char *rgba8PixelData, unsigned dataSizeInByte)
+void PPMImageMaker::OutputRGBA8ToFile(const char *fileName, UINT32 imageWidth, UINT32 imageHeight, const UINT8 *rgba8PixelData, UINT64 dataSizeInByte)
 {
 	cout << "[PPMImageMaker] Save output image to PPM file: " << fileName << " ..." << endl;
 
 	assert(rgba8PixelData && "invaild data ptr");
-	const unsigned pixelSize = 4; //rgba8 format
+	const UINT32 pixelSize = 4; //rgba8 format
 	if (dataSizeInByte)
 	{
-		bool checkSize = dataSizeInByte == (imageWidth * imageHeight * pixelSize);
+		bool checkSize = dataSizeInByte == ((UINT64)imageWidth * (UINT64)imageHeight * (UINT64)pixelSize);
 		assert(checkSize && "unmatching image size and data size");
 	}
 
@@ -29,16 +29,16 @@ void PPMImageMaker::OutputRGBA8ToFile(const char *fileName, unsigned imageWidth,
 	assert(ofs && "failed to open file stream");
 
 	ofs << "P3\n" << imageWidth << " " << imageHeight << "\n255\n";
-	for (unsigned i = 0; i < imageWidth * imageHeight; i++)
+	for (UINT32 i = 0; i < imageWidth * imageHeight; i++)
 	{
 
-		unsigned r = static_cast<unsigned>(*(rgba8PixelData + i * pixelSize));
+		UINT32 r = static_cast<UINT32>(*(rgba8PixelData + i * pixelSize));
 		if (r > 255)
 		{
 			int xxx = 0;
 		}
-		unsigned g = static_cast<unsigned>(*(rgba8PixelData + i * pixelSize + 1));
-		unsigned b = static_cast<unsigned>(*(rgba8PixelData + i * pixelSize + 2));
+		UINT32 g = static_cast<UINT32>(*(rgba8PixelData + i * pixelSize + 1));
+		UINT32 b = static_cast<UINT32>(*(rgba8PixelData + i * pixelSize + 2));
 		ofs << r << " " << g << " " << b << "\n";
 	}
 
