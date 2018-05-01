@@ -157,24 +157,29 @@
   <ItemGroup>
     <ClInclude Include="D3D12Viewer.h" />
     <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="Hitables.h" />
     <ClInclude Include="HomemadeRayTracer.h" />
+    <ClInclude Include="RandomFloat.h" />
     <ClInclude Include="Ray.h" />
     <ClInclude Include="InputListener.h" />
     <ClInclude Include="OutputImage.h" />
     <ClInclude Include="PPMImageMaker.h" />
     <ClInclude Include="RayTracer.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="SimpleCamera.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Vec3.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12Viewer.cpp" />
+    <ClCompile Include="Hitables.cpp" />
     <ClCompile Include="HomemadeRayTracer.cpp" />
     <ClCompile Include="InputListener.cpp" />
     <ClCompile Include="OutputImage.cpp" />
     <ClCompile Include="PPMImageMaker.cpp" />
     <ClCompile Include="RayTracer.cpp" />
+    <ClCompile Include="SimpleCamera.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

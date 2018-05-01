@@ -53,7 +53,6 @@ private:
 	UINT32										m_frameIndex{ 0 };
 	UINT32										m_width{ 1028 };
 	UINT32										m_height{ 720 };
-	float										m_aspectRatio{ 0.0f };
 	OutputImage *								m_image{ nullptr };
 	InputListener *								m_inputListener{ nullptr };
 	HomemadeRayTracer *							m_HMRayTracer{ nullptr };

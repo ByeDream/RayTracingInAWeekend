@@ -17,6 +17,7 @@ public:
 
 	UINT32			m_width{ 0 };
 	UINT32			m_height{ 0 };
+	float			m_aspectRatio{ 0.0f };
 	UINT64			m_dataSizeInByte{ 0 };
 	UINT32			m_pixelSizeInByte{ 4 };
 	UINT8 *			m_data{ nullptr };

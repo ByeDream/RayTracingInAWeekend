@@ -8,6 +8,8 @@ OutputImage::OutputImage(UINT32 width, UINT32 height, const char *name)
 	, m_height(height)
 	, m_name(name)
 {
+	m_aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+
 	m_dataSizeInByte = (UINT64)m_width * (UINT64)m_height * (UINT64)m_pixelSizeInByte;
 	if (m_dataSizeInByte)
 		m_data = new UINT8[m_dataSizeInByte];

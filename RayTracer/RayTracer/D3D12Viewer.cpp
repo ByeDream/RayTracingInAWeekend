@@ -87,7 +87,7 @@ D3D12Viewer::D3D12Viewer(HWND hwnd, OutputImage *outputImage, InputListener *inp
 	, m_inputListener(inputListener)
 	, m_HMRayTracer(HMRayTracer)
 {
-	m_aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
+
 }
 
 D3D12Viewer::~D3D12Viewer()

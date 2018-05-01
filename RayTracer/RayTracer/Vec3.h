@@ -32,6 +32,7 @@ struct Vec3
 	inline const float length() const { return DirectX::XMVectorGetX(DirectX::XMVector3Length(m_simd)); }
 	inline const float squared_length() const { return DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(m_simd)); }
 	inline void normalize() { m_simd = DirectX::XMVector3Normalize(m_simd); }
+	inline void zero() { m_simd = DirectX::XMVectorZero(); }
 };
 
 inline std::istream& operator>>(std::istream &is, Vec3 &v)

@@ -19,6 +19,9 @@
     <Filter Include="Source\Utils">
       <UniqueIdentifier>{090691d5-26a6-4d06-8156-3853f246bc53}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\3DScene">
+      <UniqueIdentifier>{8be7adfc-846d-4959-8551-001e579c996e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RayTracer.h">
@@ -57,6 +60,15 @@
     <ClInclude Include="Vec3.h">
       <Filter>Source\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Hitables.h">
+      <Filter>Source\HMRayTracer</Filter>
+    </ClInclude>
+    <ClInclude Include="SimpleCamera.h">
+      <Filter>Source\3DScene</Filter>
+    </ClInclude>
+    <ClInclude Include="RandomFloat.h">
+      <Filter>Source\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracer.cpp">
@@ -79,6 +91,12 @@
     </ClCompile>
     <ClCompile Include="PPMImageMaker.cpp">
       <Filter>Source\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="Hitables.cpp">
+      <Filter>Source\HMRayTracer</Filter>
+    </ClCompile>
+    <ClCompile Include="SimpleCamera.cpp">
+      <Filter>Source\3DScene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
