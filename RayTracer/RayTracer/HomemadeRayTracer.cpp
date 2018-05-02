@@ -7,6 +7,8 @@
 #include "SimpleCamera.h"
 #include "RandomFloat.h"
 
+#include "InputListener.h"
+
 using namespace std;
 
 #define SHOW_PROGRESS
@@ -27,7 +29,9 @@ namespace
 	}
 }
 
-HomemadeRayTracer::HomemadeRayTracer()
+HomemadeRayTracer::HomemadeRayTracer(InputListener *inputListener, OutputImage *image)
+	: m_inputListener(inputListener)
+	, m_image(image)
 {
 
 }
@@ -37,17 +41,75 @@ HomemadeRayTracer::~HomemadeRayTracer()
 
 }
 
-void HomemadeRayTracer::Trace(OutputImage *image)
+void HomemadeRayTracer::OnInit()
 {
-	cout << "[HomemadeRayTracer] Tracing ..." << endl;
+	ConstructHitableWorld();
+
+	m_camera = new SimpleCamera(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f), m_image->m_aspectRatio, 1.0f, 3000.0f);
+
+	m_inputListener->RegisterKey('R');
+	m_inputListener->RegisterKey('H');
+	m_inputListener->RegisterKey('N');
+	m_inputListener->RegisterKey('M');
+}
+
+void HomemadeRayTracer::OnUpdate()
+{
+	if (m_inputListener->WhenReleaseKey('R'))
+	{
+		Render(m_image);
+	}
+
+	if (m_inputListener->WhenReleaseKey('H'))
+	{
+		HelpInfo();
+	}
+
+	if (m_inputListener->WhenReleaseKey('N'))
+	{
+		m_enableNormalDisplay = !m_enableNormalDisplay;
+
+		cout << "[HomemadeRayTracer][NormalDisplay] " << (m_enableNormalDisplay ? "Enabled" : "Disabled") << endl;
+	}
+
+	if (m_inputListener->WhenReleaseKey('M'))
+	{
+		m_enblaeAA = !m_enblaeAA;
+
+		cout << "[HomemadeRayTracer][AA] " << (m_enblaeAA ? "Enabled" : "Disabled") << endl;
+	}
+}
+
+void HomemadeRayTracer::OnDestroy()
+{
+	if (m_camera)
+	{
+		delete m_camera;
+		m_camera = nullptr;
+	}
+	DeconstructHitableWorld();
+}
+
+void HomemadeRayTracer::HelpInfo()
+{
+	cout << "=============HomemadeRayTracer============" << endl;
+	cout << "[Hot keys]" << endl;
+	cout << "  [h] Display this message." << endl;
+	cout << "  [r] Render result to output image and upload it to viewer." << endl;
+	cout << "  [n] Switch on/off normal display." << endl;
+	cout << "  [m] Switch on/off anti-aliasing." << endl;
+	cout << "[NormalDisplay] " << (m_enableNormalDisplay ? "Enabled" : "Disabled") << endl;
+	cout << "[AA] " << (m_enblaeAA ? "Enabled" : "Disabled") << endl;
+	cout << "==========================================" << endl;
+}
+
+void HomemadeRayTracer::Render(OutputImage *image)
+{
+	cout << "[HomemadeRayTracer] Rendering ..." << endl;
 
 	cout << "[HomemadeRayTracer] Sample count per pixel: " << SampleCount << endl;
 
 	//image->RenderAsRainbow();
-
-	ConstructHitableWorld();
-
-	SimpleCamera camera(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f), image->m_aspectRatio, 1.0f, 3000.0f);
 
 	UINT32 width = image->m_width;
 	UINT32 height = image->m_height;
@@ -58,17 +120,29 @@ void HomemadeRayTracer::Trace(OutputImage *image)
 		for (UINT32 i = 0; i < width; i++)
 		{
 			Vec3 &col = pixels[j * width + i];
-			// Multi-sample
-			col.zero();
-			for (UINT32 s = 0; s < SampleCount; s++)
-			{
-				float u = float(i + Random(0.0f, 1.0f)) / float(width);
-				float v = float(j + Random(0.0f, 1.0f)) / float(height);
 
-				Ray r = camera.GetRay(u, v);
-				col += Sample(r, *m_hitableWorld);
+			if (m_enblaeAA)
+			{
+				// Multi-sample
+				col.zero();
+				for (UINT32 s = 0; s < SampleCount; s++)
+				{
+					float u = float(i + Random(0.0f, 1.0f)) / float(width);
+					float v = float(j + Random(0.0f, 1.0f)) / float(height);
+
+					Ray r = m_camera->GetRay(u, v);
+					col += Sample(r, *m_hitableWorld);
+				}
+				col /= float(SampleCount);
 			}
-			col /= float(SampleCount);
+			else
+			{
+				float u = float(i) / float(width);
+				float v = float(j) / float(height);
+				Ray r = m_camera->GetRay(u, v);
+				col = Sample(r, *m_hitableWorld);
+			}
+			
 		}
 
 #if defined(SHOW_PROGRESS)
@@ -79,21 +153,27 @@ void HomemadeRayTracer::Trace(OutputImage *image)
 
 	// housekeeping
 	delete[] pixels;
-	DeconstructHitableWorld();
 
 	cout << "[HomemadeRayTracer] Done" << endl;
 }
 
 Vec3 HomemadeRayTracer::Sample(const Ray &r, const Hitable &world) const
 {
+	Vec3 col;
 	HitRecord rec;
 	// TODO : instead of use 0.0f, use the t of hit point with view plane.
 	if (world.Hit(r, 0.0f, FLT_MAX, rec))
 	{
 		Vec3 target = rec.m_position + rec.m_normal + romdomInUnitSphere();
-		//return 0.5f * Vec3(rec.m_normal.x() + 1.0f, rec.m_normal.y() + 1.0f, rec.m_normal.z() + 1.0f);
-		
-		return 0.5f * Sample( Ray(rec.m_position, target - rec.m_position), world); 
+
+		if (m_enableNormalDisplay)
+		{
+			col = 0.5f * Vec3(rec.m_normal.x() + 1.0f, rec.m_normal.y() + 1.0f, rec.m_normal.z() + 1.0f);
+		}
+		else
+		{
+			col = 0.5f * Sample(Ray(rec.m_position, target - rec.m_position), world);
+		}
 	}
 	else
 	{
@@ -102,8 +182,10 @@ Vec3 HomemadeRayTracer::Sample(const Ray &r, const Hitable &world) const
 		Vec3 dir = normalize(r.m_dir);
 		float t = 0.5f * (dir.y() + 1.0f);
 		// lerp
-		return (1.0f - t) * Vec3(1.0f, 1.0f, 1.0f) + t * Vec3(0.5f, 0.7f, 1.0f);
+		col = (1.0f - t) * Vec3(1.0f, 1.0f, 1.0f) + t * Vec3(0.5f, 0.7f, 1.0f);
 	}
+
+	return col;
 }
 
 void HomemadeRayTracer::ConstructHitableWorld()

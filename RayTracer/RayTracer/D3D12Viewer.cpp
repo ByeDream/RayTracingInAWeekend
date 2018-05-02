@@ -97,17 +97,16 @@ D3D12Viewer::~D3D12Viewer()
 
 void D3D12Viewer::HelpInfo()
 {
-	cout << "=========================================" << endl;
-	cout << "[Hotkeys]" << endl;
+	cout << "================D3D12Viewer===============" << endl;
+	cout << "[Hot keys]" << endl;
 	cout << "  [h] Display this message." << endl;
 	cout << "  [o] Save output image to PPM file." << endl;
-	cout << "  [r] Render homemake ray tracing to output image and switch to image viewer mode." << endl;
 	cout << "  Scene viewer mode:" << endl;
 	cout << "    [i] Switch to image viewer mode." << endl;
 	cout << "  Image viewer mode:" << endl;
 	cout << "    [esc] Switch back to Scene viewer mode." << endl;
 	cout << "[Current Mode] " << D3D12ViewerModeNames[m_mode] << endl;
-	cout << "=========================================" << endl;
+	cout << "==========================================" << endl;
 }
 
 void D3D12Viewer::OnInit()
@@ -119,7 +118,6 @@ void D3D12Viewer::OnInit()
 	m_inputListener->RegisterKey('O');
 	m_inputListener->RegisterKey('I');
 	m_inputListener->RegisterKey('H');
-	m_inputListener->RegisterKey('R');
 
 	/*
 	m_inputListener->RegisterKey('W');
@@ -145,13 +143,6 @@ void D3D12Viewer::OnUpdate()
 		HelpInfo();
 	}
 
-	if (m_inputListener->WhenReleaseKey('R'))
-	{
-		m_HMRayTracer->Trace(m_image);
-		m_isOutputImageDirty = TRUE;
-		SwitchMode(VMODE_IMAGE_VIEWER);
-	}
-
 	// mode switch
 	if (m_mode != VMODE_SCENE_VIEWER)
 	{
@@ -162,7 +153,8 @@ void D3D12Viewer::OnUpdate()
 	}
 	else
 	{
-		if (m_inputListener->WhenReleaseKey('I'))
+		// auto switch to yo image viewer when image is dirty
+		if (m_inputListener->WhenReleaseKey('I') || m_image->m_isDirty)
 		{
 			SwitchMode(VMODE_IMAGE_VIEWER);
 		}
@@ -174,7 +166,7 @@ void D3D12Viewer::OnRender()
 {
 	BeginDraw();
 	{
-		if (m_isOutputImageDirty)
+		if (m_image->m_isDirty)
 		{
 			UploadImage();
 		}
@@ -193,6 +185,8 @@ void D3D12Viewer::OnRender()
 		EndBackSurface();
 	}
 	EndDraw();
+
+	m_image->m_isDirty = FALSE;
 }
 
 void D3D12Viewer::OnDestroy()
@@ -665,7 +659,7 @@ void D3D12Viewer::SwitchMode(D3D12ViewerMode mode)
 	if (mode != m_mode)
 	{
 		m_mode = mode;
-		cout << "[Mode] " << D3D12ViewerModeNames[m_mode] << endl;
+		cout << "[D3D12Viewer][Mode] " << D3D12ViewerModeNames[m_mode] << endl;
 	}
 }
 

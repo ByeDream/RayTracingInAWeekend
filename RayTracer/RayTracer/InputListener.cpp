@@ -5,7 +5,11 @@ using namespace std;
 
 void InputListener::RegisterKey(UINT8 keyCode)
 {
-	m_keyStatus[keyCode] = KeyState{};
+	auto keyState = m_keyStatus.find(keyCode);
+	if (keyState == m_keyStatus.end())
+	{
+		m_keyStatus[keyCode] = KeyState{};
+	}
 }
 	 
 BOOL InputListener::WhenPressKey(UINT8 keyCode)

@@ -57,7 +57,6 @@ private:
 	InputListener *								m_inputListener{ nullptr };
 	HomemadeRayTracer *							m_HMRayTracer{ nullptr };
 	D3D12ViewerMode								m_mode{ VMODE_SCENE_VIEWER };
-	BOOL										m_isOutputImageDirty{ FALSE };
 
 	CD3DX12_VIEWPORT							m_viewport;
 	CD3DX12_RECT								m_scissorRect;

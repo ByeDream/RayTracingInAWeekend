@@ -22,4 +22,5 @@ public:
 	UINT32			m_pixelSizeInByte{ 4 };
 	UINT8 *			m_data{ nullptr };
 	std::string		m_name{};
+	BOOL			m_isDirty{ FALSE };
 };

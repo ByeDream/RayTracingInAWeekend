@@ -42,6 +42,8 @@ void OutputImage::RenderAsRainbow()
 			*(baseOffset + 3) = static_cast<UINT32>(a * 255.0f) & 0xFF;
 		}
 	}
+
+	m_isDirty = TRUE;
 }
 
 void OutputImage::RenderAsRed()
@@ -51,6 +53,8 @@ void OutputImage::RenderAsRed()
 		UINT32 *baseOffset = reinterpret_cast<UINT32 *>(m_data + i * m_pixelSizeInByte);
 		*(baseOffset) = 0xFF0000FF;
 	}
+
+	m_isDirty = TRUE;
 }
 
 void OutputImage::Render(const Vec3 *pixels, UINT32 pixelCount)
@@ -76,6 +80,8 @@ void OutputImage::Render(const Vec3 *pixels, UINT32 pixelCount)
 			*(baseOffset + 3) = static_cast<UINT32>(a * 255.0f) & 0xFF;
 		}
 	}
+
+	m_isDirty = TRUE;
 }
 
 void OutputImage::Output()
