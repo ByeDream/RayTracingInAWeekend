@@ -8,26 +8,13 @@
 #include "RandomFloat.h"
 
 #include "InputListener.h"
+#include "Materials.h"
 
 using namespace std;
 
 #define SHOW_PROGRESS
-#define SampleCount 8
-
-// TODO : remove temp code:
-namespace
-{
-	Vec3 romdomInUnitSphere() 
-	{
-		Vec3 p;
-		do
-		{
-			p = 2.0f * Vec3(Random(), Random(), Random()) - Vec3(1.0f, 1.0f, 1.0f);
-		} while (p.squared_length() >= 1.0f);
-
-		return p;
-	}
-}
+#define SAMPLE_COUNT 8
+#define MAX_SAMPLE_DEPTH  50
 
 HomemadeRayTracer::HomemadeRayTracer(InputListener *inputListener, OutputImage *image)
 	: m_inputListener(inputListener)
@@ -107,7 +94,7 @@ void HomemadeRayTracer::Render(OutputImage *image)
 {
 	cout << "[HomemadeRayTracer] Rendering ..." << endl;
 
-	cout << "[HomemadeRayTracer] Sample count per pixel: " << SampleCount << endl;
+	cout << "[HomemadeRayTracer] Sample count per pixel: " << SAMPLE_COUNT << endl;
 
 	//image->RenderAsRainbow();
 
@@ -125,15 +112,15 @@ void HomemadeRayTracer::Render(OutputImage *image)
 			{
 				// Multi-sample
 				col.zero();
-				for (UINT32 s = 0; s < SampleCount; s++)
+				for (UINT32 s = 0; s < SAMPLE_COUNT; s++)
 				{
 					float u = float(i + Random(0.0f, 1.0f)) / float(width);
 					float v = float(j + Random(0.0f, 1.0f)) / float(height);
 
 					Ray r = m_camera->GetRay(u, v);
-					col += Sample(r, *m_hitableWorld);
+					col += Sample(r, *m_hitableWorld, 0);
 				}
-				col /= float(SampleCount);
+				col /= float(SAMPLE_COUNT);
 
 				// the gamma correction, to the approximation, use the power 1/gamma, and the gamma == 2, which is just square-root.
 				col = Vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
@@ -143,7 +130,7 @@ void HomemadeRayTracer::Render(OutputImage *image)
 				float u = float(i) / float(width);
 				float v = float(j) / float(height);
 				Ray r = m_camera->GetRay(u, v);
-				col = Sample(r, *m_hitableWorld);
+				col = Sample(r, *m_hitableWorld, 0);
 			}
 			
 		}
@@ -160,7 +147,7 @@ void HomemadeRayTracer::Render(OutputImage *image)
 	cout << "[HomemadeRayTracer] Done" << endl;
 }
 
-Vec3 HomemadeRayTracer::Sample(const Ray &r, const Hitable &world) const
+Vec3 HomemadeRayTracer::Sample(const Ray &r, const Hitable &world, UINT32 depth) const
 {
 	Vec3 col;
 	HitRecord rec;
@@ -173,13 +160,16 @@ Vec3 HomemadeRayTracer::Sample(const Ray &r, const Hitable &world) const
 		}
 		else
 		{
-
-			// TODO for material
-			// lambertian
-			// send a ray back to the air with a random direction from the unit radius sphere that is tangent to the hitpoint
-			// recursively sample the indirect light with absorb half the energy(50% reflectors), until reach the sky light 
-			Vec3 target = rec.m_position + rec.m_normal + romdomInUnitSphere();
-			col = 0.5f * Sample(Ray(rec.m_position, target - rec.m_position), world);
+			Vec3 attenuation;
+			Ray r_scattered;
+			if (depth < MAX_SAMPLE_DEPTH && rec.m_hitMaterial && rec.m_hitMaterial->Scatter(r, rec, attenuation, r_scattered))
+			{
+				col = attenuation * Sample(r_scattered, world, depth + 1);
+			}
+			else
+			{
+				col.zero();
+			}
 		}
 	}
 	else
@@ -198,21 +188,38 @@ Vec3 HomemadeRayTracer::Sample(const Ray &r, const Hitable &world) const
 void HomemadeRayTracer::ConstructHitableWorld()
 {
 	cout << "[HomemadeRayTracer] ConstructHitableWorld" << endl;
-	Hitable **list = new Hitable *[2];
-	list[0] = new SphereHitable(Vec3(0.0f, 0.0f, -1.0f), 0.5f);
-	list[1] = new SphereHitable(Vec3(0.0f, -100.5f, -1.0f), 100.0f);
-	m_hitableWorld = new HitableCombo(list, 2);
+	m_materialListSize = 2;
+	m_materialList = new Material *[m_materialListSize];
+	m_materialList[0] = new Lambertian(Vec3(0.6f, 0.3f, 0.3f));
+	m_materialList[1] = new Lambertian(Vec3(0.6f, 0.6f, 0.1f));
+
+
+	m_hitableListSize = 2;
+	m_hitableList = new Hitable *[m_hitableListSize];
+	m_hitableList[0] = new SphereHitable(Vec3(0.0f, 0.0f, -1.0f), 0.5f);
+	m_hitableList[0]->BindMaterial(m_materialList[0]);
+	m_hitableList[1] = new SphereHitable(Vec3(0.0f, -100.5f, -1.0f), 100.0f);
+	m_hitableList[1]->BindMaterial(m_materialList[1]);
+	m_hitableWorld = new HitableCombo(m_hitableList, 2);
 }
 
 void HomemadeRayTracer::DeconstructHitableWorld()
 {
 	cout << "[HomemadeRayTracer] DeconstructHitableWorld" << endl;
-	HitableCombo *world = reinterpret_cast<HitableCombo *>(m_hitableWorld);
-	for (UINT32 i = 0; i < world->m_arraySize; i++)
+	for (auto i = 0; i < m_hitableListSize; i++)
 	{
-		delete world->m_pointerArray[i];
+		delete m_hitableList[i];
 	}
-	delete[] world->m_pointerArray;
+	delete[] m_hitableList;
+	m_hitableList = nullptr;
+
+	for (auto i = 0; i < m_materialListSize; i++)
+	{
+		delete m_materialList[i];
+	}
+	delete[] m_materialList;
+	m_materialList = nullptr;
+
 	delete m_hitableWorld;
 	m_hitableWorld = nullptr;
 }

@@ -159,6 +159,7 @@
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="Hitables.h" />
     <ClInclude Include="HomemadeRayTracer.h" />
+    <ClInclude Include="Materials.h" />
     <ClInclude Include="RandomFloat.h" />
     <ClInclude Include="Ray.h" />
     <ClInclude Include="InputListener.h" />
@@ -176,6 +177,7 @@
     <ClCompile Include="Hitables.cpp" />
     <ClCompile Include="HomemadeRayTracer.cpp" />
     <ClCompile Include="InputListener.cpp" />
+    <ClCompile Include="Materials.cpp" />
     <ClCompile Include="OutputImage.cpp" />
     <ClCompile Include="PPMImageMaker.cpp" />
     <ClCompile Include="RayTracer.cpp" />

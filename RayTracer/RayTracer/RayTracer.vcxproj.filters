@@ -69,6 +69,9 @@
     <ClInclude Include="RandomFloat.h">
       <Filter>Source\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Materials.h">
+      <Filter>Source\HMRayTracer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracer.cpp">
@@ -97,6 +100,9 @@
     </ClCompile>
     <ClCompile Include="SimpleCamera.cpp">
       <Filter>Source\3DScene</Filter>
+    </ClCompile>
+    <ClCompile Include="Materials.cpp">
+      <Filter>Source\HMRayTracer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

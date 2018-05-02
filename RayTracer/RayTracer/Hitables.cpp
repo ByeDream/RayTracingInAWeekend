@@ -33,6 +33,7 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 			out_rec.m_time = t;
 			out_rec.m_position = r.PointAt(t);
 			out_rec.m_normal = (out_rec.m_position - m_center) / m_radius; // same as normalize, cos the length is know as m_radius
+			out_rec.m_hitMaterial = m_material;
 			return TRUE; // the nearest hitting on ray direction
 		}
 		t = (-b + sqrt(discriminant)) / (2.0f * a);
@@ -41,6 +42,7 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 			out_rec.m_time = t;
 			out_rec.m_position = r.PointAt(t);
 			out_rec.m_normal = (out_rec.m_position - m_center) / m_radius; // same as normalize, cos the length is know as m_radius
+			out_rec.m_hitMaterial = m_material;
 			return TRUE; // the farthest hitting on ray direction
 		}
 	}
