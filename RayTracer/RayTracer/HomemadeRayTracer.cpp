@@ -134,6 +134,9 @@ void HomemadeRayTracer::Render(OutputImage *image)
 					col += Sample(r, *m_hitableWorld);
 				}
 				col /= float(SampleCount);
+
+				// the gamma correction, to the approximation, use the power 1/gamma, and the gamma == 2, which is just square-root.
+				col = Vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
 			}
 			else
 			{
@@ -161,23 +164,27 @@ Vec3 HomemadeRayTracer::Sample(const Ray &r, const Hitable &world) const
 {
 	Vec3 col;
 	HitRecord rec;
-	// TODO : instead of use 0.0f, use the t of hit point with view plane.
-	if (world.Hit(r, 0.0f, FLT_MAX, rec))
+	// Ignore hits very near 0 to get rid of the shdow acne.
+	if (world.Hit(r, 0.001f, FLT_MAX, rec))
 	{
-		Vec3 target = rec.m_position + rec.m_normal + romdomInUnitSphere();
-
 		if (m_enableNormalDisplay)
 		{
 			col = 0.5f * Vec3(rec.m_normal.x() + 1.0f, rec.m_normal.y() + 1.0f, rec.m_normal.z() + 1.0f);
 		}
 		else
 		{
+
+			// TODO for material
+			// lambertian
+			// send a ray back to the air with a random direction from the unit radius sphere that is tangent to the hitpoint
+			// recursively sample the indirect light with absorb half the energy(50% reflectors), until reach the sky light 
+			Vec3 target = rec.m_position + rec.m_normal + romdomInUnitSphere();
 			col = 0.5f * Sample(Ray(rec.m_position, target - rec.m_position), world);
 		}
 	}
 	else
 	{
-		// BgColor
+		// Sky light
 		// blends white and blue depending on the up/downess of the y coordinate
 		Vec3 dir = normalize(r.m_dir);
 		float t = 0.5f * (dir.y() + 1.0f);
