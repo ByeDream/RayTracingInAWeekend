@@ -28,16 +28,16 @@ namespace
 	BOOL refract(const Vec3 &v, const Vec3 &n, float ni_over_nt, Vec3 &refracted)
 	{
 		// Snell's law
-		Vec3 uv = normalize(v);
-		float dt = dot(uv, n);
+		float dt = dot(v, n);
 		float discriminant = 1.0f - ni_over_nt * ni_over_nt * (1 - dt * dt);
 		BOOL ret = discriminant > 0;
 		if (ret) // if false, there is no real solution to Snell's law, called "total internal reflection"
-			refracted = ni_over_nt * (uv - n * dt) - n * sqrt(discriminant);
+			refracted = ni_over_nt * (v - n * dt) - n * sqrt(discriminant);
 		return ret;
 	}
 
-	// the surprisingly simple polynomial approximation by Christophe Schlick for the anisotropy  
+	// Schlick's approximation, named after Christophe Schlick, 
+	// is a formula for approximating the contribution of the Fresnel factor in the specular reflection of light from a non-conducting interface (surface) between two media.
 	float schlick(float cosine, float ref_idx)
 	{
 		float r0 = (1 - ref_idx) / (1 + ref_idx);
@@ -74,40 +74,41 @@ BOOL Metal::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ra
 BOOL Dielectric::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const
 {
 	Vec3 outward_normal;
-	Vec3 r_reflected;
-	reflect(normalize(r_in.m_dir), rec.m_normal, r_reflected);
+	Vec3 uv = normalize(r_in.m_dir);
+	
 
 	float ni_over_nt;
 	attenuation = Vec3(1.0f, 1.0f, 1.0f); // Dielectrics absorb nothing
 	Vec3 r_refracted;
 	float reflect_prob;
 	float cosine;
-	if (dot(r_in.m_dir, rec.m_normal) > 0) {
+	if (dot(uv, rec.m_normal) > 0) {
 		// from internal to outside
 		outward_normal = -rec.m_normal;
 		ni_over_nt = m_refractiveIndex;  // device by air ref index(1.0f)
-		cosine = m_refractiveIndex * dot(r_in.m_dir, rec.m_normal) / r_in.m_dir.length();
+		cosine = m_refractiveIndex * dot(uv, rec.m_normal);
 	}
 	else
 	{
 		// from outside to internal
 		outward_normal = rec.m_normal;
 		ni_over_nt = 1.0f / m_refractiveIndex;  // device by air ref index(1.0f)
-		cosine = -dot(r_in.m_dir, rec.m_normal) / r_in.m_dir.length();
+		cosine = -dot(uv, rec.m_normal);
 	}
 
-	if (refract(r_in.m_dir, outward_normal, ni_over_nt, r_refracted))
+	if (refract(uv, outward_normal, ni_over_nt, r_refracted))
 	{
 		reflect_prob = schlick(cosine, m_refractiveIndex);
 	}
 	else
 	{
 		// total internal reflection
-		r_scattered = Ray(rec.m_position, r_reflected);
 		reflect_prob = 1.0f;
 	}
 
 	if (Random() < reflect_prob) {
+		Vec3 r_reflected;
+		reflect(uv, rec.m_normal, r_reflected);
 		r_scattered = Ray(rec.m_position, r_reflected);
 	}
 	else

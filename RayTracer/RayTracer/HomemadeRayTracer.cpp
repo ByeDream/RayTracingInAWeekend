@@ -198,7 +198,7 @@ void HomemadeRayTracer::ConstructHitableWorld()
 	//m_materialListSize = sizeof(m_materialList) / sizeof(Material *);
 
 
-	m_hitableListSize = 4;
+	m_hitableListSize = 5;
 	m_hitableList = new Hitable *[m_hitableListSize];
 	m_hitableList[0] = new SphereHitable(Vec3(0.0f, 0.0f, -1.0f), 0.5f);
 	m_hitableList[0]->BindMaterial(m_materialList[0]);
@@ -208,6 +208,8 @@ void HomemadeRayTracer::ConstructHitableWorld()
 	m_hitableList[2]->BindMaterial(m_materialList[2]);
 	m_hitableList[3] = new SphereHitable(Vec3(-1.0f, 0.0f, -1.0f), 0.5f);
 	m_hitableList[3]->BindMaterial(m_materialList[3]);
+	m_hitableList[4] = new SphereHitable(Vec3(-1.0f, 0.0f, -1.0f), -0.45f);
+	m_hitableList[4]->BindMaterial(m_materialList[3]);
 
 	//m_hitableListSize =  sizeof(m_hitableList) / sizeof(Hitable *);
 
