@@ -3,8 +3,8 @@ A toy tay tracer implemented by following Peter Shirley's book - Ray Tracing In 
 
 ## Features
 
-* PPMImageMaker
-* D3D12ImageViewer
-* D3D12SceneViewer(Rasterizer)
-* HomemadeRayTracer
-* D3D12RayTracing
+* PPMImageMaker							[Done]
+* D3D12ImageViewer						[Done]
+* D3D12SceneViewer(Rasterizer)			[WIP 20%]
+* HomemadeRayTracer						[WIP 60%]
+* D3D12RayTracing						[TODO]
