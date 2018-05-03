@@ -193,7 +193,7 @@ void HomemadeRayTracer::ConstructHitableWorld()
 	m_materialList[0] = new Lambertian(Vec3(0.8f, 0.3f, 0.3f));
 	m_materialList[1] = new Lambertian(Vec3(0.8f, 0.8f, 0.0f));
 	m_materialList[2] = new Metal(Vec3(0.8f, 0.6f, 0.2f), 1.0f);
-	m_materialList[3] = new Metal(Vec3(0.8f, 0.8f, 0.8f), 0.3f);
+	m_materialList[3] = new Dielectric(1.5);
 
 	//m_materialListSize = sizeof(m_materialList) / sizeof(Material *);
 
