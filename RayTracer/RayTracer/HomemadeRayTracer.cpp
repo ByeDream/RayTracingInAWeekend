@@ -102,7 +102,11 @@ void HomemadeRayTracer::Render(OutputImage *image)
 	UINT32 height = image->m_height;
 
 	Vec3 *pixels = new Vec3[width * height];
-	for (UINT32 j = 0; j < height; j++)
+
+	INT32 nthreads, tid;
+	UINT32 progress = 0;
+#pragma omp parallel for default(none) shared(pixels, progress) private(nthreads, tid)
+	for (INT32 j = 0; j < (INT32)height; j++) // To use omp, I have to use signed index.
 	{
 		for (UINT32 i = 0; i < width; i++)
 		{
@@ -136,7 +140,10 @@ void HomemadeRayTracer::Render(OutputImage *image)
 		}
 
 #if defined(SHOW_PROGRESS)
-		printf("%.2lf%%\r", j * 100.0 / height);
+		nthreads = omp_get_num_threads();
+		tid = omp_get_thread_num();
+		progress++;
+		printf("[Thread %d(%d)]%.2lf%%\r", tid, nthreads, progress * 100.0 / height);
 #endif
 	}
 	image->Render(pixels);
