@@ -8,6 +8,3 @@ A toy tay tracer implemented by following Peter Shirley's book - Ray Tracing In 
 * D3D12SceneViewer(Rasterizer)
 * HomemadeRayTracer
 * D3D12RayTracing
-
-
-Test git push
