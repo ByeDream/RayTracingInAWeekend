@@ -18,6 +18,11 @@ namespace
 
 		return p;
 	}
+
+	Vec3 reflect(const Vec3 &v, const Vec3 &n)
+	{
+		return v - 2 * dot(v, n) * n;
+	}
 }
 
 BOOL Lambertian::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const
@@ -35,3 +40,11 @@ BOOL Lambertian::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuatio
 	return TRUE; // always
 }
 
+
+BOOL Metal::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const
+{
+	Vec3 r_reflected = reflect(normalize(r_in.m_dir), rec.m_normal);
+	r_scattered = Ray(rec.m_position, r_reflected + m_fuzziness * romdomInUnitSphere());
+	attenuation = m_albedo;
+	return (dot(r_scattered.m_dir, rec.m_normal) > 0); // absorb the scatter ray if it is below the surface
+}

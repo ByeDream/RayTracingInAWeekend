@@ -39,9 +39,9 @@ class HitableCombo: public Hitable
 {
 public:
 	Hitable **					m_pointerArray;
-	UINT32						m_arraySize;
+	size_t						m_arraySize;
 
 	HitableCombo() = default;
-	HitableCombo(Hitable **pointerArray, UINT32 arraySize);
+	HitableCombo(Hitable **pointerArray, size_t arraySize);
 	virtual BOOL Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const override;
 };

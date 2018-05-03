@@ -13,7 +13,9 @@ SphereHitable::SphereHitable(const Vec3 &center, float radius)
 BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const
 {
 	// dot(ray(t) - center, ray(t) - center) = radius * radius
-	// dot(org + t * dir - center, org + t * dir - center ) = radius * radius
+	// dot(org + t * dir - center, org + t * dir - center) = radius * radius
+	// dot((t * dir) + (org - center), (t * dir) + (org - center)) - radius * radius = 0
+	// dot(t * dir, t * dir) + 2 * dot(t * dir, org - center) + dot(org - center, org - center) - radius * radius = 0
 	// t * t * dot(dir, dir) + 2 * t * dot(dir, org - center) + dot(org - cebter, org - cebter) - radius * radius = 0
 	Vec3 oc = r.m_org - m_center;
 	float a = dot(r.m_dir, r.m_dir);
@@ -49,7 +51,7 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 	return FALSE; // no hit
 }
 
-HitableCombo::HitableCombo(Hitable **pointerArray, UINT32 arraySize)
+HitableCombo::HitableCombo(Hitable **pointerArray, size_t arraySize)
 	: m_pointerArray(pointerArray)
 	, m_arraySize(arraySize)
 {
@@ -61,7 +63,7 @@ BOOL HitableCombo::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_re
 	HitRecord rec;
 	BOOL hitAnything = FALSE;
 	float cloestSoFar = t_max;
-	for (UINT32 i = 0; i < m_arraySize; i++)
+	for (auto i = 0; i < m_arraySize; i++)
 	{
 		if (m_pointerArray[i]->Hit(r, t_min, cloestSoFar, rec))
 		{

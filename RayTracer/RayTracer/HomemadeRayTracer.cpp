@@ -188,19 +188,31 @@ Vec3 HomemadeRayTracer::Sample(const Ray &r, const Hitable &world, UINT32 depth)
 void HomemadeRayTracer::ConstructHitableWorld()
 {
 	cout << "[HomemadeRayTracer] ConstructHitableWorld" << endl;
-	m_materialListSize = 2;
+	m_materialListSize = 4;
 	m_materialList = new Material *[m_materialListSize];
-	m_materialList[0] = new Lambertian(Vec3(0.6f, 0.3f, 0.3f));
-	m_materialList[1] = new Lambertian(Vec3(0.6f, 0.6f, 0.1f));
+	m_materialList[0] = new Lambertian(Vec3(0.8f, 0.3f, 0.3f));
+	m_materialList[1] = new Lambertian(Vec3(0.8f, 0.8f, 0.0f));
+	m_materialList[2] = new Metal(Vec3(0.8f, 0.6f, 0.2f), 1.0f);
+	m_materialList[3] = new Metal(Vec3(0.8f, 0.8f, 0.8f), 0.3f);
+
+	//m_materialListSize = sizeof(m_materialList) / sizeof(Material *);
 
 
-	m_hitableListSize = 2;
+	m_hitableListSize = 4;
 	m_hitableList = new Hitable *[m_hitableListSize];
 	m_hitableList[0] = new SphereHitable(Vec3(0.0f, 0.0f, -1.0f), 0.5f);
 	m_hitableList[0]->BindMaterial(m_materialList[0]);
 	m_hitableList[1] = new SphereHitable(Vec3(0.0f, -100.5f, -1.0f), 100.0f);
 	m_hitableList[1]->BindMaterial(m_materialList[1]);
-	m_hitableWorld = new HitableCombo(m_hitableList, 2);
+	m_hitableList[2] = new SphereHitable(Vec3(1.0f, 0.0f, -1.0f), 0.5f);
+	m_hitableList[2]->BindMaterial(m_materialList[2]);
+	m_hitableList[3] = new SphereHitable(Vec3(-1.0f, 0.0f, -1.0f), 0.5f);
+	m_hitableList[3]->BindMaterial(m_materialList[3]);
+
+	//m_hitableListSize =  sizeof(m_hitableList) / sizeof(Hitable *);
+
+	m_hitableWorld = new HitableCombo(m_hitableList, m_hitableListSize);
+
 }
 
 void HomemadeRayTracer::DeconstructHitableWorld()
