@@ -66,10 +66,13 @@
     <ClInclude Include="SimpleCamera.h">
       <Filter>Source\3DScene</Filter>
     </ClInclude>
-    <ClInclude Include="RandomFloat.h">
+    <ClInclude Include="Materials.h">
+      <Filter>Source\HMRayTracer</Filter>
+    </ClInclude>
+    <ClInclude Include="Randomizer.h">
       <Filter>Source\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Materials.h">
+    <ClInclude Include="Optics.h">
       <Filter>Source\HMRayTracer</Filter>
     </ClInclude>
   </ItemGroup>

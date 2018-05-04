@@ -91,9 +91,9 @@ inline float dot(const Vec3 &v1, const Vec3 &v2)
 	return DirectX::XMVectorGetX(DirectX::XMVector3Dot(v1.m_simd, v2.m_simd));
 }
 
-inline float cross(const Vec3 &v1, const Vec3 &v2)
+inline Vec3 cross(const Vec3 &v1, const Vec3 &v2)
 {
-	return DirectX::XMVectorGetX(DirectX::XMVector3Cross(v1.m_simd, v2.m_simd));
+	return DirectX::XMVector3Cross(v1.m_simd, v2.m_simd);
 }
 
 inline Vec3 normalize(const Vec3 &v)

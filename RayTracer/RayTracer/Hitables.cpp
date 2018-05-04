@@ -51,21 +51,14 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 	return FALSE; // no hit
 }
 
-HitableCombo::HitableCombo(Hitable **pointerArray, size_t arraySize)
-	: m_pointerArray(pointerArray)
-	, m_arraySize(arraySize)
-{
-
-}
-
 BOOL HitableCombo::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const
 {
 	HitRecord rec;
 	BOOL hitAnything = FALSE;
 	float cloestSoFar = t_max;
-	for (auto i = 0; i < m_arraySize; i++)
+	for (auto i = m_hitableListRef.begin(); i != m_hitableListRef.end(); i++)
 	{
-		if (m_pointerArray[i]->Hit(r, t_min, cloestSoFar, rec))
+		if ((*i)->Hit(r, t_min, cloestSoFar, rec))
 		{
 			hitAnything = TRUE;
 			cloestSoFar = rec.m_time;

@@ -168,7 +168,8 @@
     <ClInclude Include="Hitables.h" />
     <ClInclude Include="HomemadeRayTracer.h" />
     <ClInclude Include="Materials.h" />
-    <ClInclude Include="RandomFloat.h" />
+    <ClInclude Include="Optics.h" />
+    <ClInclude Include="Randomizer.h" />
     <ClInclude Include="Ray.h" />
     <ClInclude Include="InputListener.h" />
     <ClInclude Include="OutputImage.h" />

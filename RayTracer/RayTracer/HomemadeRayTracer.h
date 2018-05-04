@@ -32,10 +32,8 @@ private:
 	Hitable *					m_hitableWorld{ nullptr }; // root
 	SimpleCamera *				m_camera{ nullptr };
 
-	size_t						m_materialListSize{ 0 };
-	Material **					m_materialList{ nullptr };
-	size_t						m_hitableListSize{ 0 };
-	Hitable **					m_hitableList{ nullptr };
+	std::vector<Material *>		m_materialList;
+	std::vector<Hitable *>		m_hitableList;
 
 	BOOL						m_enableNormalDisplay{ FALSE };
 	BOOL						m_enblaeAA{ TRUE };

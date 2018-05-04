@@ -38,10 +38,9 @@ public:
 class HitableCombo: public Hitable
 {
 public:
-	Hitable **					m_pointerArray;
-	size_t						m_arraySize;
+	const std::vector<Hitable *> &m_hitableListRef;
 
 	HitableCombo() = default;
-	HitableCombo(Hitable **pointerArray, size_t arraySize);
+	HitableCombo(const std::vector<Hitable *> &hitableListRef) : m_hitableListRef(hitableListRef) {}
 	virtual BOOL Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const override;
 };

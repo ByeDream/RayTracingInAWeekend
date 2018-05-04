@@ -5,7 +5,7 @@
 #include "Hitables.h"
 #include "OutputImage.h"
 #include "SimpleCamera.h"
-#include "RandomFloat.h"
+#include "Randomizer.h"
 
 #include "InputListener.h"
 #include "Materials.h"
@@ -13,7 +13,7 @@
 using namespace std;
 
 #define SHOW_PROGRESS
-#define SAMPLE_COUNT 8
+#define SAMPLE_COUNT 100
 #define MAX_SAMPLE_DEPTH  50
 
 HomemadeRayTracer::HomemadeRayTracer(InputListener *inputListener, OutputImage *image)
@@ -32,7 +32,11 @@ void HomemadeRayTracer::OnInit()
 {
 	ConstructHitableWorld();
 
-	m_camera = new SimpleCamera(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f), m_image->m_aspectRatio, 1.0f, 3000.0f);
+	Vec3 lookFrom(11.0f, 2.0f, 3.0f);
+	Vec3 lookAt(0.0f, 0.6f, 0.0f);
+	float focousDist = (lookFrom - lookAt).length();
+	//m_camera = new SimpleCamera(Vec3(-1.0f, 0.5f, -0.3f), Vec3(0.0f, 0.0f, -1.0f), Vec3(0.0f, 1.0f, 0.0f), 90.0f, m_image->m_aspectRatio, 1.0f);
+	m_camera = new SimpleCamera(lookFrom, lookAt, Vec3(0.0f, 1.0f, 0.0f), 20.0f, m_image->m_aspectRatio, 0.1f, focousDist);
 
 	m_inputListener->RegisterKey('R');
 	m_inputListener->RegisterKey('H');
@@ -118,8 +122,8 @@ void HomemadeRayTracer::Render(OutputImage *image)
 				col.zero();
 				for (UINT32 s = 0; s < SAMPLE_COUNT; s++)
 				{
-					float u = float(i + Random(0.0f, 1.0f)) / float(width);
-					float v = float(j + Random(0.0f, 1.0f)) / float(height);
+					float u = float(i + Randomizer::RandomUNorm()) / float(width);
+					float v = float(j + Randomizer::RandomUNorm()) / float(height);
 
 					Ray r = m_camera->GetRay(u, v);
 					col += Sample(r, *m_hitableWorld, 0);
@@ -143,7 +147,7 @@ void HomemadeRayTracer::Render(OutputImage *image)
 		nthreads = omp_get_num_threads();
 		tid = omp_get_thread_num();
 		progress++;
-		printf("[Thread %d(%d)]%.2lf%%\r", tid, nthreads, progress * 100.0 / height);
+		printf("[Thread %02d(%d)]%.2lf%%\r", tid, nthreads, progress * 100.0 / height);
 #endif
 	}
 	image->Render(pixels);
@@ -195,51 +199,97 @@ Vec3 HomemadeRayTracer::Sample(const Ray &r, const Hitable &world, UINT32 depth)
 void HomemadeRayTracer::ConstructHitableWorld()
 {
 	cout << "[HomemadeRayTracer] ConstructHitableWorld" << endl;
-	m_materialListSize = 4;
-	m_materialList = new Material *[m_materialListSize];
-	m_materialList[0] = new Lambertian(Vec3(0.8f, 0.3f, 0.3f));
-	m_materialList[1] = new Lambertian(Vec3(0.8f, 0.8f, 0.0f));
-	m_materialList[2] = new Metal(Vec3(0.8f, 0.6f, 0.2f), 1.0f);
-	m_materialList[3] = new Dielectric(1.5);
 
-	//m_materialListSize = sizeof(m_materialList) / sizeof(Material *);
+	//m_hitableList = new Hitable *[m_hitableListSize];
+	//m_materialList = new Material *[m_materialListSize];
 
+	Hitable *hitable = nullptr;
+	Material *material = nullptr;
 
-	m_hitableListSize = 5;
-	m_hitableList = new Hitable *[m_hitableListSize];
-	m_hitableList[0] = new SphereHitable(Vec3(0.0f, 0.0f, -1.0f), 0.5f);
-	m_hitableList[0]->BindMaterial(m_materialList[0]);
-	m_hitableList[1] = new SphereHitable(Vec3(0.0f, -100.5f, -1.0f), 100.0f);
-	m_hitableList[1]->BindMaterial(m_materialList[1]);
-	m_hitableList[2] = new SphereHitable(Vec3(1.0f, 0.0f, -1.0f), 0.5f);
-	m_hitableList[2]->BindMaterial(m_materialList[2]);
-	m_hitableList[3] = new SphereHitable(Vec3(-1.0f, 0.0f, -1.0f), 0.5f);
-	m_hitableList[3]->BindMaterial(m_materialList[3]);
-	m_hitableList[4] = new SphereHitable(Vec3(-1.0f, 0.0f, -1.0f), -0.45f);
-	m_hitableList[4]->BindMaterial(m_materialList[3]);
+	Dielectric *dielectricMaterial = new Dielectric(1.5f);
+	m_materialList.push_back(dielectricMaterial);
 
-	//m_hitableListSize =  sizeof(m_hitableList) / sizeof(Hitable *);
+	// ground
+	hitable = new SphereHitable(Vec3(0.0f, -1000.0f, -0.0f), 1000.0f);
+	material = new Lambertian(Vec3(0.5f, 0.5f, 0.5f));
+	hitable->BindMaterial(material);
+	m_hitableList.push_back(hitable);
+	m_materialList.push_back(material);
 
-	m_hitableWorld = new HitableCombo(m_hitableList, m_hitableListSize);
+	// random small spheres
+#if 1
+	for (int a = -11; a < 11; a++)
+	{
+		for (int b = -11; b < 11; b++)
+		{
+			float chooseMat = Randomizer::RandomUNorm();
+			Vec3 center(a + 0.9f * Randomizer::RandomUNorm(), 0.2f, b + 0.9f * Randomizer::RandomUNorm());
+			if ((center - Vec3(4.0f, 0.2f, 0.0f)).length() > 0.9f)
+			{
+				hitable = new SphereHitable(center, 0.2f);
+				m_hitableList.push_back(hitable);
+				if (chooseMat < 0.8f) 
+				{
+					//diffuse
+					material = new Lambertian(Vec3(Randomizer::RandomUNorm() * Randomizer::RandomUNorm(), Randomizer::RandomUNorm() * Randomizer::RandomUNorm(), Randomizer::RandomUNorm()* Randomizer::RandomUNorm()));
+					m_materialList.push_back(material);
+				}
+				else if (chooseMat < 0.95)
+				{
+					// metal
+					material = new Metal(Vec3(0.5f * (1 + Randomizer::RandomUNorm()), 0.5f * (1 + Randomizer::RandomUNorm()), 0.5f * (1 + Randomizer::RandomUNorm())), 0.5f * Randomizer::RandomUNorm());
+					m_materialList.push_back(material);
+				}
+				else
+				{
+					// dielectric
+					material = dielectricMaterial;
+				}
+
+				hitable->BindMaterial(material);
+			}
+		}
+	}
+#endif
+
+	hitable = new SphereHitable(Vec3(0.0f, 1.0f, 0.0f), 1.0f);
+	hitable->BindMaterial(dielectricMaterial);
+	m_hitableList.push_back(hitable);
+
+	hitable = new SphereHitable(Vec3(-4.0f, 1.0f, 0.0f), 1.0f);
+	material = new Lambertian(Vec3(0.4f, 0.2f, 0.1f));
+	hitable->BindMaterial(material);
+	m_hitableList.push_back(hitable);
+	m_materialList.push_back(material);
+
+	hitable = new SphereHitable(Vec3(4.0f, 1.0f, 0.0f), 1.0f);
+	material = new Metal(Vec3(0.7f, 0.6f, 0.5f), 0.0f);
+	hitable->BindMaterial(material);
+	m_hitableList.push_back(hitable);
+	m_materialList.push_back(material);
+
+	m_hitableWorld = new HitableCombo(m_hitableList);
 
 }
 
 void HomemadeRayTracer::DeconstructHitableWorld()
 {
 	cout << "[HomemadeRayTracer] DeconstructHitableWorld" << endl;
-	for (auto i = 0; i < m_hitableListSize; i++)
+	for (auto i = m_materialList.begin(); i != m_materialList.end(); i++)
 	{
-		delete m_hitableList[i];
+		if ((*i) != nullptr)
+		{
+			delete (*i);
+		}
 	}
-	delete[] m_hitableList;
-	m_hitableList = nullptr;
 
-	for (auto i = 0; i < m_materialListSize; i++)
+	for (auto i = m_hitableList.begin(); i != m_hitableList.end(); i++)
 	{
-		delete m_materialList[i];
+		if ((*i) != nullptr)
+		{
+			delete (*i);
+		}
 	}
-	delete[] m_materialList;
-	m_materialList = nullptr;
 
 	delete m_hitableWorld;
 	m_hitableWorld = nullptr;

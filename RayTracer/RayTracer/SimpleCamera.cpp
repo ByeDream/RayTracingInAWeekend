@@ -1,22 +1,29 @@
 #include "stdafx.h"
 #include "SimpleCamera.h"
 
-SimpleCamera::SimpleCamera(const Vec3 &pos, const Vec3 &up, const Vec3 &forward, float aspectRatio, float minZ, float maxZ)
-	: m_origin(pos)
+#include "Randomizer.h"
+
+SimpleCamera::SimpleCamera(const Vec3 &lookFrom, const Vec3 &lookAt, const Vec3 &ViewUp, float fov, float aspectRatio, float aperture, float focus_dist)
+	: m_origin(lookFrom)
 {
 	// right hand coordinate
-	// ignore the camera direction at the moment, it always get the up alones +y-axis(world), and looks to -z-axis(world)
-	// alse ignore FOV, maxZ at the moment
+	mLensRadius = aperture / 2.0f;
 
-	const float viewPlaneHalfHeight = 1.0f;
-	const float viewPlaneHalfWidth = viewPlaneHalfHeight * aspectRatio;
+	m_w = normalize(lookFrom - lookAt);
+	m_u = normalize(cross(ViewUp, m_w));
+	m_v = cross(m_w, m_u);
+	const float theta = fov * (float)M_PI / 180.0f;
+	const float viewHalfHeight = tan(theta / 2.0f) * focus_dist; // * minZ
+	const float viewHalfWidth = viewHalfHeight * aspectRatio;
 
-	m_viewPlaneHigherLeftCorner = m_origin + Vec3(-viewPlaneHalfWidth, viewPlaneHalfHeight, -minZ);
-	m_viewPlaneHorizontal = Vec3(2.0f * viewPlaneHalfWidth, 0.0f, 0.0f);
-	m_viewPlaneVertical = Vec3(0.0f, -2.0f * viewPlaneHalfHeight, 0.0f);
+	m_viewTopLeftCorner = m_origin - viewHalfWidth * m_u + viewHalfHeight * m_v - focus_dist * m_w;
+	m_viewHorizontal = 2.0f * viewHalfWidth * m_u;
+	m_viewVertical = -2.0f * viewHalfHeight * m_v;
 }
 
 Ray SimpleCamera::GetRay(float u, float v) const
 {
-	return Ray(m_origin, m_viewPlaneHigherLeftCorner + u * m_viewPlaneHorizontal + v * m_viewPlaneVertical);
+	Vec3 rd = mLensRadius * Randomizer::RandomInUnitDisk();
+	Vec3 offset = m_u * rd.x() + m_v * rd.y();
+	return Ray(m_origin + offset, m_viewTopLeftCorner + u * m_viewHorizontal + v * m_viewVertical - m_origin - offset);
 }
