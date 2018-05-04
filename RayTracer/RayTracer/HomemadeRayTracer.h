@@ -3,38 +3,31 @@
 #include "Vec3.h"
 
 class OutputImage;
-class Hitable;
 class Ray;
 class InputListener;
 class SimpleCamera;
-class Material;
+class Hitable;
 
 class HomemadeRayTracer
 {
 public:
-	HomemadeRayTracer(InputListener *inputListener, OutputImage *image);
+	HomemadeRayTracer(InputListener *inputListener, OutputImage *image, const Hitable *world);
 	~HomemadeRayTracer();
 
 	void						OnInit();
-	void						OnUpdate();
+	void						OnUpdate(const SimpleCamera *camera, OutputImage *image);
 	void						OnDestroy();
 	void						HelpInfo();
 
-	void						Render(OutputImage *image);
+	void						Render(const SimpleCamera *camera, OutputImage *image);
 
 private:
-	Vec3						Sample(const Ray &r, const Hitable &world, UINT32 depth) const;
-	void						ConstructHitableWorld();
-	void						DeconstructHitableWorld();
+	Vec3						Sample(const Ray &r, UINT32 depth) const;
 
 	InputListener *				m_inputListener{ nullptr };
-	OutputImage *				m_image{ nullptr };
-	Hitable *					m_hitableWorld{ nullptr }; // root
-	SimpleCamera *				m_camera{ nullptr };
-
-	std::vector<Material *>		m_materialList;
-	std::vector<Hitable *>		m_hitableList;
 
 	BOOL						m_enableNormalDisplay{ FALSE };
 	BOOL						m_enblaeAA{ TRUE };
+
+	const Hitable *				m_world{ nullptr };
 };

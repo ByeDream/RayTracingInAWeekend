@@ -75,6 +75,9 @@
     <ClInclude Include="Optics.h">
       <Filter>Source\HMRayTracer</Filter>
     </ClInclude>
+    <ClInclude Include="World.h">
+      <Filter>Source\3DScene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracer.cpp">
@@ -106,6 +109,9 @@
     </ClCompile>
     <ClCompile Include="Materials.cpp">
       <Filter>Source\HMRayTracer</Filter>
+    </ClCompile>
+    <ClCompile Include="World.cpp">
+      <Filter>Source\3DScene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
