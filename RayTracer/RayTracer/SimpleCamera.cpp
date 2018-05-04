@@ -27,3 +27,13 @@ Ray SimpleCamera::GetRay(float u, float v) const
 	Vec3 offset = m_u * rd.x() + m_v * rd.y();
 	return Ray(m_origin + offset, m_viewTopLeftCorner + u * m_viewHorizontal + v * m_viewVertical - m_origin - offset);
 }
+
+void SimpleCamera::OnUpdate(float elapsedSeconds)
+{
+
+}
+
+void SimpleCamera::Reset()
+{
+
+}
