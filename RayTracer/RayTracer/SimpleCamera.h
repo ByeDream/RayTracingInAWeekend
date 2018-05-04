@@ -3,6 +3,7 @@
 #include "Ray.h"
 
 class World;
+class InputListener;
 
 class SimpleCamera
 {
@@ -16,7 +17,8 @@ public:
 		float minZ,
 		float maxZ,
 		float aperture,
-		const World *world
+		const World *world,
+		InputListener *inputListener
 	);
 
 	inline void						SetMoveSpeed(float unitsPerSecond) { m_moveSpeed = unitsPerSecond; }
@@ -27,6 +29,8 @@ public:
 
 	DirectX::XMMATRIX				GetViewMatrix() const;
 	DirectX::XMMATRIX				GetProjectionMatrix() const;
+
+	void							HelpInfo();
 
 private:
 	void							Reset();
@@ -57,4 +61,5 @@ private:
 	Vec3							m_w;
 
 	const World *					m_world{ nullptr };
+	InputListener *					m_inputListener{ nullptr };
 };

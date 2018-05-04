@@ -30,6 +30,7 @@ HomemadeRayTracer::~HomemadeRayTracer()
 
 void HomemadeRayTracer::OnInit()
 {
+	cout << "[HomemadeRayTracer] Init" << endl;
 	m_inputListener->RegisterKey('R');
 	m_inputListener->RegisterKey('H');
 	m_inputListener->RegisterKey('N');
@@ -38,7 +39,7 @@ void HomemadeRayTracer::OnInit()
 
 void HomemadeRayTracer::OnUpdate(const SimpleCamera *camera, OutputImage *image)
 {
-	if (m_inputListener->WhenReleaseKey('R'))
+	//if (m_inputListener->WhenReleaseKey('R'))
 	{
 		Render(camera, image);
 	}
@@ -57,14 +58,15 @@ void HomemadeRayTracer::OnUpdate(const SimpleCamera *camera, OutputImage *image)
 
 	if (m_inputListener->WhenReleaseKey('M'))
 	{
-		m_enblaeAA = !m_enblaeAA;
+		m_enableSingleRay = !m_enableSingleRay;
 
-		cout << "[HomemadeRayTracer][AA] " << (m_enblaeAA ? "Enabled" : "Disabled") << endl;
+		cout << "[HomemadeRayTracer][SingleRay] " << (m_enableSingleRay ? "Enabled" : "Disabled") << endl;
 	}
 }
 
 void HomemadeRayTracer::OnDestroy()
 {
+	cout << "[HomemadeRayTracer] Destroy" << endl;
 }
 
 void HomemadeRayTracer::HelpInfo()
@@ -76,15 +78,17 @@ void HomemadeRayTracer::HelpInfo()
 	cout << "  [n] Switch on/off normal display." << endl;
 	cout << "  [m] Switch on/off anti-aliasing." << endl;
 	cout << "[NormalDisplay] " << (m_enableNormalDisplay ? "Enabled" : "Disabled") << endl;
-	cout << "[AA] " << (m_enblaeAA ? "Enabled" : "Disabled") << endl;
+	cout << "[SingleRay] " << (m_enableSingleRay ? "Enabled" : "Disabled") << endl;
 	cout << "==========================================" << endl;
 }
 
 void HomemadeRayTracer::Render(const SimpleCamera *camera, OutputImage *image)
 {
 	cout << "[HomemadeRayTracer] Rendering ..." << endl;
-
-	cout << "[HomemadeRayTracer] Sample count per pixel: " << SAMPLE_COUNT << endl;
+	if (m_enableSingleRay)
+		cout << "[HomemadeRayTracer] Sample count per pixel: 1" << endl;
+	else
+		cout << "[HomemadeRayTracer] Sample count per pixel: " << SAMPLE_COUNT << endl;
 
 	//image->RenderAsRainbow();
 
@@ -102,7 +106,15 @@ void HomemadeRayTracer::Render(const SimpleCamera *camera, OutputImage *image)
 		{
 			Vec3 &col = pixels[j * width + i];
 
-			if (m_enblaeAA)
+			if (m_enableSingleRay)
+			{
+				// Single-sample
+				float u = float(i) / float(width);
+				float v = float(j) / float(height);
+				Ray r = camera->GetRay(u, v);
+				col = Sample(r, 0);
+			}
+			else
 			{
 				// Multi-sample
 				col.zero();
@@ -118,13 +130,6 @@ void HomemadeRayTracer::Render(const SimpleCamera *camera, OutputImage *image)
 
 				// the gamma correction, to the approximation, use the power 1/gamma, and the gamma == 2, which is just square-root.
 				col = Vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
-			}
-			else
-			{
-				float u = float(i) / float(width);
-				float v = float(j) / float(height);
-				Ray r = camera->GetRay(u, v);
-				col = Sample(r, 0);
 			}
 			
 		}

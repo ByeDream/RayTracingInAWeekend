@@ -111,6 +111,7 @@ void D3D12Viewer::HelpInfo()
 
 void D3D12Viewer::OnInit()
 {
+	cout << "[D3D12Viewer] Init" << endl;
 	LoadPipeline();
 	LoadAssets();
 
@@ -118,17 +119,6 @@ void D3D12Viewer::OnInit()
 	m_inputListener->RegisterKey('O');
 	m_inputListener->RegisterKey('I');
 	m_inputListener->RegisterKey('H');
-
-	/*
-	m_inputListener->RegisterKey('W');
-	m_inputListener->RegisterKey('A');
-	m_inputListener->RegisterKey('S');
-	m_inputListener->RegisterKey('D');
-	m_inputListener->RegisterKey(VK_LEFT);
-	m_inputListener->RegisterKey(VK_UP);
-	m_inputListener->RegisterKey(VK_RIGHT);
-	m_inputListener->RegisterKey(VK_DOWN);
-	*/
 }
 
 void D3D12Viewer::OnUpdate()
@@ -191,6 +181,7 @@ void D3D12Viewer::OnRender()
 
 void D3D12Viewer::OnDestroy()
 {
+	cout << "[D3D12Viewer] Destroy" << endl;
 	// Ensure that the GPU is no longer referencing resources that are about to be
 	// cleaned up by the destructor.
 	WaitForGpu();

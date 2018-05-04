@@ -27,7 +27,7 @@ private:
 	InputListener *				m_inputListener{ nullptr };
 
 	BOOL						m_enableNormalDisplay{ FALSE };
-	BOOL						m_enblaeAA{ TRUE };
+	BOOL						m_enableSingleRay{ TRUE };
 
 	const Hitable *				m_world{ nullptr };
 };
