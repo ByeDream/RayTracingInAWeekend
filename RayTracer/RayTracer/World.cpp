@@ -2,6 +2,7 @@
 #include "World.h"
 #include "Materials.h"
 #include "Hitables.h"
+#include "Randomizer.h"
 
 using namespace std;
 
@@ -26,7 +27,7 @@ void World::ConstructWorld()
 	m_materialList.push_back(material);
 
 	// random small spheres
-#if 0
+#if 1
 	for (int a = -11; a < 11; a++)
 	{
 		for (int b = -11; b < 11; b++)

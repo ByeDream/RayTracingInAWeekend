@@ -11,7 +11,6 @@ public:
 	SimpleCamera(
 		const Vec3 &lookFrom,
 		const Vec3 &lookAt,
-		const Vec3 &viewUp,
 		float fov,
 		float aspectRatio,
 		float minZ,
@@ -35,7 +34,7 @@ public:
 private:
 	void							Reset();
 	void							InternalUpdate();
-	BOOL							AutoFocus();
+	BOOL							AutoFocus(const Vec3 &lookDir);
 
 	Vec3							m_origin;
 	Vec3							m_initialOrigin;
@@ -62,4 +61,8 @@ private:
 
 	const World *					m_world{ nullptr };
 	InputListener *					m_inputListener{ nullptr };
+
+	float							m_yaw;
+	float							m_pitch;
+
 };

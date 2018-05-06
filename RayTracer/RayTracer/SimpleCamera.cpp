@@ -13,7 +13,6 @@ using namespace std;
 SimpleCamera::SimpleCamera(
 	const Vec3 &lookFrom,
 	const Vec3 &lookAt,
-	const Vec3 &viewUp,
 	float fov,
 	float aspectRatio,
 	float minZ,
@@ -24,16 +23,16 @@ SimpleCamera::SimpleCamera(
 )
 	: m_initialOrigin(lookFrom)
 	, m_initialFocus(lookAt)
-	, m_vup(viewUp)
+	, m_vup(0.0f, 1.0f, 0.0f) // no roll
 	, m_fov(fov)
 	, m_aspectRatio(aspectRatio)
 	, m_nearPlane(minZ)
 	, m_farPlane(maxZ)
 	, m_lensRadius(aperture / 2.0f)
-	, m_moveSpeed(0.0f)
-	, m_turnSpeed(0.0f)
 	, m_world(world)
 	, m_inputListener(inputListener)
+	, m_moveSpeed(0.0f)
+	, m_turnSpeed(0.0f)
 {
 	m_inputListener->RegisterKey('W');
 	m_inputListener->RegisterKey('A');
@@ -57,55 +56,73 @@ Ray SimpleCamera::GetRay(float u, float v) const
 
 void SimpleCamera::OnUpdate(float elapsedSeconds)
 {
-
-	
+	if (m_inputListener->WhenReleaseKey(VK_ESCAPE))
+	{
+		Reset();
+		return;
+	}
 
 	// Calculate the move vector in camera space.
+	BOOL holdA = m_inputListener->WhenHoldKey('A');
+	BOOL holdD = m_inputListener->WhenHoldKey('D');
+	BOOL holdW = m_inputListener->WhenHoldKey('W');
+	BOOL holdS = m_inputListener->WhenHoldKey('S');
+	BOOL holdLeft = m_inputListener->WhenHoldKey(VK_LEFT);
+	BOOL holdRight = m_inputListener->WhenHoldKey(VK_RIGHT);
+	BOOL holdUp = m_inputListener->WhenHoldKey(VK_UP);
+	BOOL holdDown = m_inputListener->WhenHoldKey(VK_DOWN);
+	BOOL holdAnyKey = holdA || holdD || holdW || holdS || holdLeft || holdRight || holdUp || holdDown;
+
+
 	Vec3 move(0.0f, 0.0f, 0.0f);
-	if (m_inputListener->WhenHoldKey('A'))
+	if (holdA)
 		move += Vec3(-1.0f, 0.0f, 0.0f);
-	if (m_inputListener->WhenHoldKey('D'))
+	if (holdD)
 		move += Vec3(1.0f, 0.0f, 0.0f);
-	if (m_inputListener->WhenHoldKey('W'))
+	if (holdW)
 		move += Vec3(0.0f, 0.0f, -1.0f);
-	if (m_inputListener->WhenHoldKey('S'))
+	if (holdS)
 		move += Vec3(0.0f, 0.0f, 1.0f);
-	move.normalize();
-
-
-	Vec3 offset = m_u * move.x() + m_w * move.z();
-	m_origin += offset;
-
 
 	// Calculate the rotatle
-	float yawAngle = 0.0f;
-	float pitchAngle = 0.0f;
-	if (m_inputListener->WhenHoldKey(VK_LEFT))
-		yawAngle += 0.3f;
-	if (m_inputListener->WhenHoldKey(VK_RIGHT))
-		yawAngle -= 0.3f;
-	if (m_inputListener->WhenHoldKey(VK_UP))
-		pitchAngle += 0.3f;
-	if (m_inputListener->WhenHoldKey(VK_DOWN))
-		pitchAngle -= 0.3f;
-	cout << yawAngle << endl;
-	cout << pitchAngle << endl;
+	if (holdLeft)
+		m_yaw += 0.3f;
+	if (holdRight)
+		m_yaw -= 0.3f;
+	if (holdUp)
+		m_pitch -= 0.1f;
+	if (holdDown)
+		m_pitch += 0.1f;
 
-	DirectX::XMMATRIX rotatle = DirectX::XMMatrixRotationRollPitchYaw(pitchAngle, yawAngle, 0.0f);
-	m_w = DirectX::XMVector3Transform(m_w.m_simd, rotatle);
+	if (holdAnyKey)
+	{
+		// update origin
+		move.normalize();
+		Vec3 offset = m_u * move.x() + m_w * move.z();
+		m_origin += offset;
 
-	m_focus = m_origin - m_w;
+		// update focus
+		float r = cosf(m_pitch);
+		Vec3 lookDir(r * sinf(m_yaw), -sinf(m_pitch), r * cosf(m_yaw));
+		m_focus = m_origin + lookDir;
 
-
-
-	// redo auto focus here as lone as we have update, to be opti later
-	AutoFocus();
-	InternalUpdate();
+		AutoFocus(lookDir);
+		InternalUpdate();
+	}
 }
 
 void SimpleCamera::HelpInfo()
 {
-
+	cout << "================SimpleCamera==============" << endl;
+	cout << "[Hot keys]" << endl;
+	cout << "  [h] Display this message." << endl;
+	cout << "  [a,d,w,s] move the camera's position." << endl;
+	cout << "  [up, down, left, right] rotate the camera's pitch and yaw." << endl;
+	cout << "  [esc] reset the camera" << endl;
+	cout << "[Orientation] " << m_origin << " > " << m_focus <<endl;
+	cout << "[fov] " << m_fov << endl;
+	cout << "[aperture] " << m_lensRadius * 2.0f << endl;
+	cout << "==========================================" << endl;
 }
 
 void SimpleCamera::Reset()
@@ -113,6 +130,35 @@ void SimpleCamera::Reset()
 	cout << "[SimpleCamera] Reset" << endl;
 	m_origin = m_initialOrigin;
 	m_focus = m_initialFocus;
+	Vec3 lookDir = m_focus - m_origin;
+	float length = lookDir.length();
+	if (length != 0.0f)
+	{
+		m_pitch = -asinf((lookDir.y() / length));
+		if (lookDir.z() > 0.0f)
+		{
+			m_yaw = atanf((lookDir.x() / lookDir.z()));
+		}
+		else if (lookDir.z() < 0.0f)
+		{
+			m_yaw = atanf((lookDir.x() / lookDir.z())) + (float)M_PI;
+		}
+		else if (lookDir.x() > 0.0f)
+		{
+			m_yaw = (float)M_PI_2;
+		}
+		else if (lookDir.x() < 0.0f)
+		{
+			m_yaw = -(float)M_PI_2;
+		}
+	}
+	else
+	{
+		m_focus = m_origin + Vec3(0.0f, 0.0f, -1.0f);
+		m_pitch = 0.0f;
+		m_yaw = (float)M_PI;
+	}
+	
 	InternalUpdate();
 }
 
@@ -135,17 +181,17 @@ void SimpleCamera::InternalUpdate()
 
 DirectX::XMMATRIX SimpleCamera::GetViewMatrix() const
 {
-	return DirectX::XMMATRIX();
+	return DirectX::XMMatrixLookAtRH(m_origin.m_simd, m_focus.m_simd, m_v.m_simd);
 }
 DirectX::XMMATRIX SimpleCamera::GetProjectionMatrix() const
 {
-	return DirectX::XMMATRIX();
+	return DirectX::XMMatrixPerspectiveFovRH(m_fov * (float)M_PI / 180.0f, m_aspectRatio, m_nearPlane, m_farPlane);
 }
 
-BOOL SimpleCamera::AutoFocus()
+BOOL SimpleCamera::AutoFocus(const Vec3 &lookDir)
 {
 	HitRecord rec;
-	Ray r(m_origin, -m_w);
+	Ray r(m_origin, lookDir);
 	if (m_world->GetRootHitable()->Hit(r, 0.01f, FLT_MAX, rec))
 	{
 		m_focus = rec.m_position;
