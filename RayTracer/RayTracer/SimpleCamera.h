@@ -26,8 +26,8 @@ public:
 	Ray								GetRay(float u, float v) const;
 	void							OnUpdate(float elapsedSeconds);
 
-	DirectX::XMMATRIX				GetViewMatrix() const;
-	DirectX::XMMATRIX				GetProjectionMatrix() const;
+	XMMATRIX						GetViewMatrix() const;
+	XMMATRIX						GetProjectionMatrix() const;
 
 	void							HelpInfo();
 

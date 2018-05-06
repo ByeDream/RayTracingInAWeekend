@@ -179,11 +179,11 @@ void SimpleCamera::InternalUpdate()
 	m_viewVertical = -2.0f * viewHalfHeight * m_v;
 }
 
-DirectX::XMMATRIX SimpleCamera::GetViewMatrix() const
+XMMATRIX SimpleCamera::GetViewMatrix() const
 {
 	return DirectX::XMMatrixLookAtRH(m_origin.m_simd, m_focus.m_simd, m_v.m_simd);
 }
-DirectX::XMMATRIX SimpleCamera::GetProjectionMatrix() const
+XMMATRIX SimpleCamera::GetProjectionMatrix() const
 {
 	return DirectX::XMMatrixPerspectiveFovRH(m_fov * (float)M_PI / 180.0f, m_aspectRatio, m_nearPlane, m_farPlane);
 }
