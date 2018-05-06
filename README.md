@@ -1,3 +1,5 @@
+![Alt text](https://github.com/ByeDream/RayTracingInAWeekend/blob/master/title.png)
+
 # RayTracingInAWeekend
 A toy tay tracer implemented by following Peter Shirley's book - Ray Tracing In A Weekend
 
