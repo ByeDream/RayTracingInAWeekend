@@ -39,7 +39,7 @@ void HomemadeRayTracer::OnInit()
 
 void HomemadeRayTracer::OnUpdate(const SimpleCamera *camera, OutputImage *image)
 {
-	//if (m_inputListener->WhenReleaseKey('R'))
+	if (m_inputListener->WhenReleaseKey('R'))
 	{
 		Render(camera, image);
 	}

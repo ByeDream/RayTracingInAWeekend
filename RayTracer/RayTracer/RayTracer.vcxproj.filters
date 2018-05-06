@@ -78,6 +78,9 @@
     <ClInclude Include="World.h">
       <Filter>Source\3DScene</Filter>
     </ClInclude>
+    <ClInclude Include="StepTimer.h">
+      <Filter>Source\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracer.cpp">
