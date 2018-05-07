@@ -3,6 +3,7 @@
 class OutputImage;
 class InputListener;
 class HomemadeRayTracer;
+class SimpleCamera;
 
 enum D3D12ViewerMode
 {
@@ -26,7 +27,7 @@ public:
 	~D3D12Viewer();
 
 	void										OnInit();
-	void										OnUpdate();
+	void										OnUpdate(SimpleCamera *camera);
 	void										OnRender();
 	void										OnDestroy();
 	void										HelpInfo();

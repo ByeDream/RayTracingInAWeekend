@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "SimpeMeshBuilder.h"
 
+#include "SimpleMesh.h"
 
 #define BUILD_MESH_OPTIMIZE_FOR_REUSE 14
 
@@ -104,18 +105,27 @@ void SimpeMeshBuilder::BuildTorusMesh(BuildMeshMode const eMode, SimpleMesh *des
 		const XMFLOAT2 textureScale(outerRepeats / (outerVertices - 1), innerRepeats / (innerVertices - 1));
 		for (UINT32 o = 0; o < outerVertices; ++o)
 		{
-			const float outerTheta = o * 2 * M_PI / (outerVertices - 1);
+			const float outerTheta = o * 2 * (float)M_PI / (outerVertices - 1);
 			const XMMATRIX outerToWorld = DirectX::XMMatrixRotationZ(outerTheta) * DirectX::XMMatrixTranslation(outerRadius, 0, 0);
 			for (UINT32 i = 0; i < innerVertices; ++i)
 			{
-				const float innerTheta = i * 2 * M_PI / (innerVertices - 1);
+				const float innerTheta = i * 2 * (float)M_PI / (innerVertices - 1);
 				const XMMATRIX innerToOuter = DirectX::XMMatrixRotationY(innerTheta) * DirectX::XMMatrixTranslation(innerRadius, 0, 0);
 				const XMMATRIX localToWorld = outerToWorld * innerToOuter;
-				outV->m_position = localToWorld * XMFLOAT4(0, 0, 0, 1);
-				outV->m_normal = localToWorld * XMFLOAT4(1, 0, 0, 0);
-				outV->m_tangent = localToWorld * XMFLOAT4(0, 1, 0, 0);
-				outV->m_color = XMFLOAT4(1, 1, 1, 1);
-				outV->m_texture = mulPerElem(XMFLOAT2((float)o, (float)i), textureScale);
+
+				// outV->m_position = localToWorld * XMVECTOR(0, 0, 0, 1);
+				XMVECTOR v = DirectX::XMVectorSet(0, 0, 0, 1);
+				DirectX::XMStoreFloat3(&outV->m_position, DirectX::XMVector4Transform(v, localToWorld));
+				
+				//outV->m_normal = localToWorld * XMVECTOR(1, 0, 0, 0);
+				v = DirectX::XMVectorSet(1, 0, 0, 0);
+				DirectX::XMStoreFloat3(&outV->m_normal, DirectX::XMVector4Transform(v, localToWorld));
+
+				//outV->m_tangent = localToWorld * XMVECTOR(0, 1, 0, 0);
+				v = DirectX::XMVectorSet(0, 1, 0, 0);
+				DirectX::XMStoreFloat4(&outV->m_tangent, DirectX::XMVector4Transform(v, localToWorld));
+
+				outV->m_texture = XMFLOAT2((float)o * textureScale.x, (float)i * textureScale.y);
 				++outV;
 			}
 		}
@@ -123,9 +133,7 @@ void SimpeMeshBuilder::BuildTorusMesh(BuildMeshMode const eMode, SimpleMesh *des
 	}
 
 	if (eMode > kBuildVerticesOnly) {	//BuildIndices
-		char temp[64];
-		sprintf(temp, "%s (Index)", name);
-		allocators->allocate(&destMesh->m_indexBuffer, SCE_KERNEL_WC_GARLIC, destMesh->m_indexBufferSize, Gnm::kAlignmentOfBufferInBytes, Gnm::kResourceTypeIndexBufferBaseAddress, &destMesh->m_indexBufferRH, temp);
+		destMesh->m_indexBuffer = new UINT8[destMesh->m_indexBufferSize];
 		if (destMesh->m_indexBuffer == NULL) {
 			assert(destMesh->m_indexBuffer != NULL);
 			return;
@@ -173,7 +181,7 @@ void SimpeMeshBuilder::BuildTorusMesh(BuildMeshMode const eMode, SimpleMesh *des
 	}
 }
 
-void SimpeMeshBuilder::BuildSphereMesh(const char *name, SimpleMesh *destMesh, float radius, long xdiv, long ydiv, float tx, float ty, float tz)
+void SimpeMeshBuilder::BuildSphereMesh(SimpleMesh *destMesh, float radius, long xdiv, long ydiv, float tx, float ty, float tz)
 {
 	destMesh->m_vertexCount = (xdiv + 1) * (ydiv + 1);
 
@@ -187,23 +195,18 @@ void SimpeMeshBuilder::BuildSphereMesh(const char *name, SimpleMesh *destMesh, f
 	destMesh->m_vertexBufferSize = destMesh->m_vertexCount * sizeof(SimpleMeshVertex);
 	destMesh->m_indexBufferSize = destMesh->m_indexCount * sizeof(UINT16);
 
-	char temp[64];
-	sprintf(temp, "%s (Vertex)", name);
-	allocators->allocate(&destMesh->m_vertexBuffer, SCE_KERNEL_WC_GARLIC, destMesh->m_vertexBufferSize, Gnm::kAlignmentOfBufferInBytes, Gnm::kResourceTypeVertexBufferBaseAddress, &destMesh->m_vertexBufferRH, temp);
-	sprintf(temp, "%s (Index)", name);
-	allocators->allocate(&destMesh->m_indexBuffer, SCE_KERNEL_WC_GARLIC, destMesh->m_indexBufferSize, Gnm::kAlignmentOfBufferInBytes, Gnm::kResourceTypeIndexBufferBaseAddress, &destMesh->m_indexBufferRH, temp);
+	destMesh->m_vertexBuffer = new UINT8[destMesh->m_vertexBufferSize];
+	destMesh->m_indexBuffer = new UINT8[destMesh->m_indexBufferSize];
 
 	memset(destMesh->m_vertexBuffer, 0, destMesh->m_vertexBufferSize);
 	memset(destMesh->m_indexBuffer, 0, destMesh->m_indexBufferSize);
-
-	SetMeshVertexBufferFormat(destMesh);
 
 	// Everything else is just filling in the vertex and index buffer.
 	SimpleMeshVertex *outV = static_cast<SimpleMeshVertex*>(destMesh->m_vertexBuffer);
 	UINT16 *outI = static_cast<UINT16*>(destMesh->m_indexBuffer);
 
-	const float gx = 2 * M_PI / xdiv;
-	const float gy = M_PI / ydiv;
+	const float gx = 2 * (float)M_PI / xdiv;
+	const float gy = (float)M_PI / ydiv;
 
 	for (long i = 0; i < xdiv; ++i)
 	{
@@ -223,7 +226,6 @@ void SimpeMeshBuilder::BuildSphereMesh(const char *name, SimpleMesh *destMesh, f
 			outV[k + j].m_position = XMFLOAT3(x*radius + tx, y*radius + ty, z*radius + tz);
 			outV[k + j].m_normal = XMFLOAT3(x, y, z);
 			outV[k + j].m_texture = XMFLOAT2(theta * 0.1591549430918953f, phi * 0.31830988618379f);
-			outV[k + j].m_color = XMFLOAT4(1, 0, 0, 1);
 		}
 	}
 
@@ -237,7 +239,6 @@ void SimpeMeshBuilder::BuildSphereMesh(const char *name, SimpleMesh *destMesh, f
 		outV[kk + j].m_position = XMFLOAT3(x*radius + tx, ty, z*radius + tz);
 		outV[kk + j].m_normal = XMFLOAT3(x, 0, z);
 		outV[kk + j].m_texture = XMFLOAT2(1, phi * 0.31830988618379f);
-		outV[kk + j].m_color = XMFLOAT4(1, 0, 0, 1);
 
 	}
 
@@ -250,25 +251,21 @@ void SimpeMeshBuilder::BuildSphereMesh(const char *name, SimpleMesh *destMesh, f
 		outV[k1 - 1].m_position = XMFLOAT3(tx, ty, radius + tz);
 		outV[k1 - 1].m_normal = XMFLOAT3(0, 0, 1);
 		outV[k1 - 1].m_texture = XMFLOAT2(s, 0);
-		outV[k1 - 1].m_color = XMFLOAT4(1, 0, 0, 1);
 
 
 		outV[k1 + ydiv - 1].m_position = XMFLOAT3(tx, ty, -radius + tz);
 		outV[k1 + ydiv - 1].m_normal = XMFLOAT3(0, 0, -1);
 		outV[k1 + ydiv - 1].m_texture = XMFLOAT2(s, 1);
-		outV[k1 + ydiv - 1].m_color = XMFLOAT4(1, 0, 0, 1);
 
 	}
 
 	outV[xdiv*(ydiv + 1)].m_position = outV[0].m_position;
 	outV[xdiv*(ydiv + 1)].m_normal = outV[0].m_normal;
 	outV[xdiv*(ydiv + 1)].m_texture = outV[0].m_texture;
-	outV[xdiv*(ydiv + 1)].m_color = outV[0].m_color;
 
 	outV[xdiv*(ydiv + 1) + ydiv].m_position = outV[ydiv].m_position;
 	outV[xdiv*(ydiv + 1) + ydiv].m_normal = outV[ydiv].m_normal;
 	outV[xdiv*(ydiv + 1) + ydiv].m_texture = outV[ydiv].m_texture;
-	outV[xdiv*(ydiv + 1) + ydiv].m_color = outV[ydiv].m_color;
 
 	long ii = 0;
 	for (long i = 0; i < xdiv; ++i)
@@ -300,7 +297,7 @@ void SimpeMeshBuilder::BuildSphereMesh(const char *name, SimpleMesh *destMesh, f
 	// Double texcoords
 	for (UINT32 i = 0; i < destMesh->m_vertexCount; ++i)
 	{
-		outV[i].m_texture = mulPerElem(ToVector2(outV[i].m_texture), XMFLOAT2(4.f, 2.f));
+		outV[i].m_texture = XMFLOAT2(outV[i].m_texture.x * 4.f, outV[i].m_texture.y * 2.f);
 	}
 
 	// Calculate tangents
@@ -315,58 +312,53 @@ void SimpeMeshBuilder::BuildSphereMesh(const char *name, SimpleMesh *destMesh, f
 		const long i1 = outI[i * 3 + 0];
 		const long i2 = outI[i * 3 + 1];
 		const long i3 = outI[i * 3 + 2];
-		const XMFLOAT3 v1 = ToVector3(outV[i1].m_position);
-		const XMFLOAT3 v2 = ToVector3(outV[i2].m_position);
-		const XMFLOAT3 v3 = ToVector3(outV[i3].m_position);
-		const XMFLOAT2 w1 = ToVector2(outV[i1].m_texture);
-		const XMFLOAT2 w2 = ToVector2(outV[i2].m_texture);
-		const XMFLOAT2 w3 = ToVector2(outV[i3].m_texture);
+		const XMFLOAT3 v1 = outV[i1].m_position;
+		const XMFLOAT3 v2 = outV[i2].m_position;
+		const XMFLOAT3 v3 = outV[i3].m_position;
+		const XMFLOAT2 w1 = outV[i1].m_texture;
+		const XMFLOAT2 w2 = outV[i2].m_texture;
+		const XMFLOAT2 w3 = outV[i3].m_texture;
 
-		const float x1 = v2[0] - v1[0];
-		const float x2 = v3[0] - v1[0];
-		const float y1 = v2[1] - v1[1];
-		const float y2 = v3[1] - v1[1];
-		const float z1 = v2[2] - v1[2];
-		const float z2 = v3[2] - v1[2];
+		const float x1 = v2.x - v1.x;
+		const float x2 = v3.x - v1.x;
+		const float y1 = v2.y - v1.y;
+		const float y2 = v3.y - v1.y;
+		const float z1 = v2.z - v1.z;
+		const float z2 = v3.z - v1.z;
 
-		const float s1 = w2[0] - w1[0];
-		const float s2 = w3[0] - w1[0];
-		const float t1 = w2[1] - w1[1];
-		const float t2 = w3[1] - w1[1];
+		const float s1 = w2.x - w1.x;
+		const float s2 = w3.x - w1.x;
+		const float t1 = w2.y - w1.y;
+		const float t2 = w3.y - w1.y;
 
 		const float r = 1.f / (s1*t2 - s2 * t1);
 		const XMFLOAT3 sdir((t2*x1 - t1 * x2)*r, (t2*y1 - t1 * y2)*r, (t2*z1 - t1 * z2)*r);
 		const XMFLOAT3 tdir((s1*x2 - s2 * x1)*r, (s1*y2 - s2 * y1)*r, (s1*z2 - s2 * z1)*r);
 
-		tan1[i1] = tan1[i1] + sdir;
-		tan1[i2] = tan1[i2] + sdir;
-		tan1[i3] = tan1[i3] + sdir;
-		tan2[i1] = tan2[i1] + tdir;
-		tan2[i2] = tan2[i2] + tdir;
-		tan2[i3] = tan2[i3] + tdir;
+		
+		tan1[i1] = XMFLOAT3(tan1[i1].x + sdir.x, tan1[i1].y + sdir.y, tan1[i1].z + sdir.z);
+		tan1[i2] = XMFLOAT3(tan1[i2].x + sdir.x, tan1[i2].y + sdir.y, tan1[i2].z + sdir.z); 
+		tan1[i3] = XMFLOAT3(tan1[i3].x + sdir.x, tan1[i3].y + sdir.y, tan1[i3].z + sdir.z); 
+		tan2[i1] = XMFLOAT3(tan1[i1].x + tdir.x, tan1[i1].y + tdir.y, tan1[i1].z + tdir.z); 
+		tan2[i2] = XMFLOAT3(tan1[i2].x + tdir.x, tan1[i2].y + tdir.y, tan1[i2].z + tdir.z); 
+		tan2[i3] = XMFLOAT3(tan1[i3].x + tdir.x, tan1[i3].y + tdir.y, tan1[i3].z + tdir.z);
 	}
 	const long count = destMesh->m_vertexCount;
 	for (long i = 0; i < count; ++i)
 	{
-		const XMFLOAT3 n = ToVector3(outV[i].m_normal);
+		const XMFLOAT3 n = outV[i].m_normal;
 		const XMFLOAT3 t = tan1[i];
-		const float nDotT = n[0] * t[0] + n[1] * t[1] + n[2] * t[2];
-		const XMFLOAT3 tan_a(t[0] - n[0] * nDotT, t[1] - n[1] * nDotT, t[2] - n[2] * nDotT);
-		const float ooLen = 1.f / sqrtf(tan_a[0] * tan_a[0] + tan_a[1] * tan_a[1] + tan_a[2] * tan_a[2]);
-		outV[i].m_tangent = XMFLOAT4(tan_a[0] * ooLen, tan_a[1] * ooLen, tan_a[2] * ooLen, 1);
+		const float nDotT = n.x * t.x + n.y * t.y + n.z * t.z;
+		const XMFLOAT3 tan_a(t.x - n.x * nDotT, t.y - n.y * nDotT, t.z - n.z * nDotT);
+		const float ooLen = 1.f / sqrtf(tan_a.x * tan_a.x + tan_a.y * tan_a.y + tan_a.z * tan_a.z);
+		outV[i].m_tangent = XMFLOAT4(tan_a.x * ooLen, tan_a.y * ooLen, tan_a.z * ooLen, 1);
 	}
 
 	delete[] tan1;
 	delete[] tan2;
 }
 
-void SimpeMeshBuilder::BuildSphereMesh(SimpleMesh *destMesh, float radius, long xdiv, long ydiv, float tx, float ty, float tz)
-{
-	Allocators allocators(*allocator, *allocator);
-	return BuildSphereMesh(&allocators, 0, destMesh, radius, xdiv, ydiv, tx, ty, tz);
-}
-
-void SimpeMeshBuilder::BuildQuadMesh(const char *name, SimpleMesh *destMesh, float size)
+void SimpeMeshBuilder::BuildQuadMesh(SimpleMesh *destMesh, float size)
 {
 	destMesh->m_vertexCount = 4;
 
@@ -380,16 +372,13 @@ void SimpeMeshBuilder::BuildQuadMesh(const char *name, SimpleMesh *destMesh, flo
 	destMesh->m_vertexBufferSize = destMesh->m_vertexCount * sizeof(SimpleMeshVertex);
 	destMesh->m_indexBufferSize = destMesh->m_indexCount * sizeof(UINT16);
 
-	char temp[64];
-	sprintf(temp, "%s (Vertex)", name);
-	allocators->allocate(&destMesh->m_vertexBuffer, SCE_KERNEL_WC_GARLIC, destMesh->m_vertexBufferSize, Gnm::kAlignmentOfBufferInBytes, Gnm::kResourceTypeVertexBufferBaseAddress, &destMesh->m_vertexBufferRH, temp);
-	sprintf(temp, "%s (Index)", name);
-	allocators->allocate(&destMesh->m_indexBuffer, SCE_KERNEL_WC_GARLIC, destMesh->m_indexBufferSize, Gnm::kAlignmentOfBufferInBytes, Gnm::kResourceTypeIndexBufferBaseAddress, &destMesh->m_indexBufferRH, temp);
+
+	destMesh->m_vertexBuffer = new UINT8[destMesh->m_vertexBufferSize];
+	destMesh->m_indexBuffer = new UINT8[destMesh->m_indexBufferSize];
+
 
 	memset(destMesh->m_vertexBuffer, 0, destMesh->m_vertexBufferSize);
 	memset(destMesh->m_indexBuffer, 0, destMesh->m_indexBufferSize);
-
-	SetMeshVertexBufferFormat(destMesh);
 
 	// Everything else is just filling in the vertex and index buffer.
 	SimpleMeshVertex *outV = static_cast<SimpleMeshVertex*>(destMesh->m_vertexBuffer);
@@ -398,10 +387,10 @@ void SimpeMeshBuilder::BuildQuadMesh(const char *name, SimpleMesh *destMesh, flo
 	size *= 0.5f;
 	const SimpleMeshVertex verts[4] =
 	{
-		{ { -size, -size, 0 },{ 0,0,1 },{ 1,0,0,1 },{ 1,1,1,1 },{ 0,1 } },
-	{ { size, -size, 0 },{ 0,0,1 },{ 1,0,0,1 },{ 1,1,1,1 },{ 1,1 } },
-	{ { -size,  size, 0 },{ 0,0,1 },{ 1,0,0,1 },{ 1,1,1,1 },{ 0,0 } },
-	{ { size,  size, 0 },{ 0,0,1 },{ 1,0,0,1 },{ 1,1,1,1 },{ 1,0 } },
+		{ { -size, -size, 0 },{ 0,0,1 },{ 1,0,0,1 },{ 0,1 } },
+	{ { size, -size, 0 },{ 0,0,1 },{ 1,0,0,1 },{ 1,1 } },
+	{ { -size,  size, 0 },{ 0,0,1 },{ 1,0,0,1 },{ 0,0 } },
+	{ { size,  size, 0 },{ 0,0,1 },{ 1,0,0,1 },{ 1,0 } },
 	};
 	memcpy(outV, verts, 4 * sizeof(SimpleMeshVertex));
 
@@ -413,13 +402,7 @@ void SimpeMeshBuilder::BuildQuadMesh(const char *name, SimpleMesh *destMesh, flo
 	outI[5] = 2;
 }
 
-void SimpeMeshBuilder::BuildQuadMesh(SimpleMesh *destMesh, float size)
-{
-	Allocators allocators(*allocator, *allocator);
-	return BuildQuadMesh(&allocators, 0, destMesh, size);
-}
-
-void SimpeMeshBuilder::BuildCubeMesh(const char *name, SimpleMesh *destMesh, float side)
+void SimpeMeshBuilder::BuildCubeMesh(SimpleMesh *destMesh, float side)
 {
 	destMesh->m_vertexCount = 24;
 
@@ -433,16 +416,11 @@ void SimpeMeshBuilder::BuildCubeMesh(const char *name, SimpleMesh *destMesh, flo
 	destMesh->m_vertexBufferSize = destMesh->m_vertexCount * sizeof(SimpleMeshVertex);
 	destMesh->m_indexBufferSize = destMesh->m_indexCount * sizeof(UINT16);
 
-	char temp[64];
-	sprintf(temp, "%s (Vertex)", name);
-	allocators->allocate(&destMesh->m_vertexBuffer, SCE_KERNEL_WC_GARLIC, destMesh->m_vertexBufferSize, Gnm::kAlignmentOfBufferInBytes, Gnm::kResourceTypeVertexBufferBaseAddress, &destMesh->m_vertexBufferRH, temp);
-	sprintf(temp, "%s (Index)", name);
-	allocators->allocate(&destMesh->m_indexBuffer, SCE_KERNEL_WC_GARLIC, destMesh->m_indexBufferSize, Gnm::kAlignmentOfBufferInBytes, Gnm::kResourceTypeIndexBufferBaseAddress, &destMesh->m_indexBufferRH, temp);
+	destMesh->m_vertexBuffer = new UINT8[destMesh->m_vertexBufferSize];
+	destMesh->m_indexBuffer = new UINT8[destMesh->m_indexBufferSize];
 
 	memset(destMesh->m_vertexBuffer, 0, destMesh->m_vertexBufferSize);
 	memset(destMesh->m_indexBuffer, 0, destMesh->m_indexBufferSize);
-
-	SetMeshVertexBufferFormat(destMesh);
 
 	// Everything else is just filling in the vertex and index buffer.
 	SimpleMeshVertex *outV = static_cast<SimpleMeshVertex*>(destMesh->m_vertexBuffer);
@@ -450,30 +428,30 @@ void SimpeMeshBuilder::BuildCubeMesh(const char *name, SimpleMesh *destMesh, flo
 
 	const float halfSide = side * 0.5f;
 	const SimpleMeshVertex verts[] = {
-		{ { -halfSide, -halfSide, -halfSide },{ -1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, 1.0000000, 1.0000000 },{ 1.00000000, 0.00000000, 0.0000000, 1.0000000 },{ 0, 0 } }, // 0
-	{ { -halfSide, -halfSide, -halfSide },{ 0.00000000, -1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1.00000000, 0.00000000, 0.0000000, 1.0000000 },{ 0, 0 } }, // 1
-	{ { -halfSide, -halfSide, -halfSide },{ 0.00000000, 0.00000000, -1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1.00000000, 0.00000000, 0.0000000, 1.0000000 },{ 1, 0 } }, // 2
-	{ { -halfSide, -halfSide, halfSide },{ -1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, 1.0000000, 1.0000000 },{ 0.00000000, 1.00000000, 0.0000000, 1.0000000 },{ 0, 1 } }, // 3
-	{ { -halfSide, -halfSide, halfSide },{ 0.00000000, -1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0.00000000, 1.00000000, 0.0000000, 1.0000000 },{ 1, 0 } }, // 4
-	{ { -halfSide, -halfSide, halfSide },{ 0.00000000, 0.00000000, 1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0.00000000, 1.00000000, 0.0000000, 1.0000000 },{ 0, 0 } }, // 5
-	{ { -halfSide, halfSide, -halfSide },{ -1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, 1.0000000, 1.0000000 },{ 0.00000000, 0.00000000, 1.0000000, 1.0000000 },{ 1, 0 } }, // 6
-	{ { -halfSide, halfSide, -halfSide },{ 0.00000000, 0.00000000, -1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0.00000000, 0.00000000, 1.0000000, 1.0000000 },{ 0, 0 } }, // 7
-	{ { -halfSide, halfSide, -halfSide },{ 0.00000000, 1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0.00000000, 0.00000000, 1.0000000, 1.0000000 },{ 1, 0 } }, // 8
-	{ { -halfSide, halfSide, halfSide },{ -1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, 1.0000000, 1.0000000 },{ 1.00000000, 1.00000000, 0.0000000, 1.0000000 },{ 1, 1 } }, // 9
-	{ { -halfSide, halfSide, halfSide },{ 0.00000000, 0.00000000, 1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1.00000000, 1.00000000, 0.0000000, 1.0000000 },{ 1, 0 } }, // 10
-	{ { -halfSide, halfSide, halfSide },{ 0.00000000, 1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1.00000000, 1.00000000, 0.0000000, 1.0000000 },{ 0, 0 } }, // 11
-	{ { halfSide, -halfSide, -halfSide },{ 0.00000000, -1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1.00000000, 0.00000000, 1.0000000, 1.0000000 },{ 0, 1 } }, // 12
-	{ { halfSide, -halfSide, -halfSide },{ 0.00000000, 0.00000000, -1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1.00000000, 0.00000000, 1.0000000, 1.0000000 },{ 1, 1 } }, // 13
-	{ { halfSide, -halfSide, -halfSide },{ 1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, -1.0000000, 1.0000000 },{ 1.00000000, 0.00000000, 1.0000000, 1.0000000 },{ 0, 1 } }, // 14
-	{ { halfSide, -halfSide, halfSide },{ 0.00000000, -1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0.00000000, 1.00000000, 1.0000000, 1.0000000 },{ 1, 1 } }, // 15
-	{ { halfSide, -halfSide, halfSide },{ 0.00000000, 0.00000000, 1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0.00000000, 1.00000000, 1.0000000, 1.0000000 },{ 0, 1 } }, // 16
-	{ { halfSide, -halfSide, halfSide },{ 1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, -1.0000000, 1.0000000 },{ 0.00000000, 1.00000000, 1.0000000, 1.0000000 },{ 0, 0 } }, // 17
-	{ { halfSide, halfSide, -halfSide },{ 0.00000000, 0.00000000, -1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0.00000000, 0.00000000, 0.0000000, 1.0000000 },{ 0, 1 } }, // 18
-	{ { halfSide, halfSide, -halfSide },{ 0.00000000, 1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0.00000000, 0.00000000, 0.0000000, 1.0000000 },{ 1, 1 } }, // 19
-	{ { halfSide, halfSide, -halfSide },{ 1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, -1.0000000, 1.0000000 },{ 0.00000000, 0.00000000, 0.0000000, 1.0000000 },{ 1, 1 } }, // 20
-	{ { halfSide, halfSide, halfSide },{ 0.00000000, 0.00000000, 1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1.00000000, 1.00000000, 1.0000000, 1.0000000 },{ 1, 1 } }, // 21
-	{ { halfSide, halfSide, halfSide },{ 0.00000000, 1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1.00000000, 1.00000000, 1.0000000, 1.0000000 },{ 0, 1 } }, // 22
-	{ { halfSide, halfSide, halfSide },{ 1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, -1.0000000, 1.0000000 },{ 1.00000000, 1.00000000, 1.0000000, 1.0000000 },{ 1, 0 } }, // 23
+		{ { -halfSide, -halfSide, -halfSide },{ -1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, 1.0000000, 1.0000000 },{ 0, 0 } }, // 0
+	{ { -halfSide, -halfSide, -halfSide },{ 0.00000000, -1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0, 0 } }, // 1
+	{ { -halfSide, -halfSide, -halfSide },{ 0.00000000, 0.00000000, -1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1, 0 } }, // 2
+	{ { -halfSide, -halfSide, halfSide },{ -1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, 1.0000000, 1.0000000 },{ 0, 1 } }, // 3
+	{ { -halfSide, -halfSide, halfSide },{ 0.00000000, -1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1, 0 } }, // 4
+	{ { -halfSide, -halfSide, halfSide },{ 0.00000000, 0.00000000, 1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0, 0 } }, // 5
+	{ { -halfSide, halfSide, -halfSide },{ -1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, 1.0000000, 1.0000000 },{ 1, 0 } }, // 6
+	{ { -halfSide, halfSide, -halfSide },{ 0.00000000, 0.00000000, -1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0, 0 } }, // 7
+	{ { -halfSide, halfSide, -halfSide },{ 0.00000000, 1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1, 0 } }, // 8
+	{ { -halfSide, halfSide, halfSide },{ -1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, 1.0000000, 1.0000000 },{ 1, 1 } }, // 9
+	{ { -halfSide, halfSide, halfSide },{ 0.00000000, 0.00000000, 1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1, 0 } }, // 10
+	{ { -halfSide, halfSide, halfSide },{ 0.00000000, 1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0, 0 } }, // 11
+	{ { halfSide, -halfSide, -halfSide },{ 0.00000000, -1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0, 1 } }, // 12
+	{ { halfSide, -halfSide, -halfSide },{ 0.00000000, 0.00000000, -1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1, 1 } }, // 13
+	{ { halfSide, -halfSide, -halfSide },{ 1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, -1.0000000, 1.0000000 },{ 0, 1 } }, // 14
+	{ { halfSide, -halfSide, halfSide },{ 0.00000000, -1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1, 1 } }, // 15
+	{ { halfSide, -halfSide, halfSide },{ 0.00000000, 0.00000000, 1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0, 1 } }, // 16
+	{ { halfSide, -halfSide, halfSide },{ 1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, -1.0000000, 1.0000000 },{ 0, 0 } }, // 17
+	{ { halfSide, halfSide, -halfSide },{ 0.00000000, 0.00000000, -1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0, 1 } }, // 18
+	{ { halfSide, halfSide, -halfSide },{ 0.00000000, 1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1, 1 } }, // 19
+	{ { halfSide, halfSide, -halfSide },{ 1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, -1.0000000, 1.0000000 },{ 1, 1 } }, // 20
+	{ { halfSide, halfSide, halfSide },{ 0.00000000, 0.00000000, 1.0000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 1, 1 } }, // 21
+	{ { halfSide, halfSide, halfSide },{ 0.00000000, 1.0000000, 0.00000000 },{ 1.0000000, 0.00000000, 0.00000000, 1.0000000 },{ 0, 1 } }, // 22
+	{ { halfSide, halfSide, halfSide },{ 1.0000000, 0.00000000, 0.00000000 },{ 0.00000000, 0.00000000, -1.0000000, 1.0000000 },{ 1, 0 } }, // 23
 	};
 	memcpy(outV, verts, sizeof(verts));
 
@@ -488,12 +466,6 @@ void SimpeMeshBuilder::BuildCubeMesh(const char *name, SimpleMesh *destMesh, flo
 	memcpy(outI, indices, sizeof(indices));
 }
 
-void SimpeMeshBuilder::BuildCubeMesh(SimpleMesh *destMesh, float side)
-{
-	Allocators allocators(*allocator, *allocator);
-	return BuildCubeMesh(&allocators, 0, destMesh, side);
-}
-
 float SimpeMeshBuilder::ComputeMeshSpecificBumpScale(const SimpleMesh *srcMesh)
 {
 	float fMeshSpecificBumpScale = 1.0f;
@@ -504,7 +476,7 @@ float SimpeMeshBuilder::ComputeMeshSpecificBumpScale(const SimpleMesh *srcMesh)
 
 		const SimpleMeshVertex * pfVerts = static_cast<const SimpleMeshVertex*>(static_cast<const void*>(srcMesh->m_vertexBuffer));
 		const void * pIndices = static_cast<const void*>(srcMesh->m_indexBuffer);
-		bool bIs32Bit = srcMesh->m_indexType == Gnm::kIndexSize32;
+		bool bIs32Bit = srcMesh->m_indexType == kIndexSize32;
 
 		int iNrContributions = 0;
 		double dAreaRatioSum = 0;
@@ -558,7 +530,7 @@ float SimpeMeshBuilder::ComputeMeshSpecificBumpScale(const SimpleMesh *srcMesh)
 void SimpeMeshBuilder::SaveSimpleMesh(const SimpleMesh* simpleMesh, const char* filename)
 {
 	FILE* file;
-	file = fopen(filename, "wb");
+	fopen_s(&file, filename, "wb");
 	fwrite(&simpleMesh->m_vertexCount, 1, sizeof(simpleMesh->m_vertexCount), file);
 	fwrite(&simpleMesh->m_vertexStride, 1, sizeof(simpleMesh->m_vertexStride), file);
 	fwrite(&simpleMesh->m_vertexAttributeCount, 1, sizeof(simpleMesh->m_vertexAttributeCount), file);
@@ -575,7 +547,7 @@ void SimpeMeshBuilder::SaveSimpleMesh(const SimpleMesh* simpleMesh, const char* 
 void SimpeMeshBuilder::LoadSimpleMesh(SimpleMesh* simpleMesh, const char* filename)
 {
 	FILE* file;
-	file = fopen(filename, "rb");
+	fopen_s(&file, filename, "rb");
 	fread(&simpleMesh->m_vertexCount, 1, sizeof(simpleMesh->m_vertexCount), file);
 	fread(&simpleMesh->m_vertexStride, 1, sizeof(simpleMesh->m_vertexStride), file);
 	fread(&simpleMesh->m_vertexAttributeCount, 1, sizeof(simpleMesh->m_vertexAttributeCount), file);
@@ -585,11 +557,8 @@ void SimpeMeshBuilder::LoadSimpleMesh(SimpleMesh* simpleMesh, const char* filena
 	fread(&simpleMesh->m_indexBufferSize, 1, sizeof(simpleMesh->m_indexBufferSize), file);
 	fread(&simpleMesh->m_vertexBufferSize, 1, sizeof(simpleMesh->m_vertexBufferSize), file);
 
-	char temp[64];
-	sprintf(temp, "%s (Vertex)", filename);
-	allocators->allocate(&simpleMesh->m_vertexBuffer, SCE_KERNEL_WC_GARLIC, simpleMesh->m_vertexBufferSize, Gnm::kAlignmentOfBufferInBytes, Gnm::kResourceTypeVertexBufferBaseAddress, &simpleMesh->m_vertexBufferRH, temp);
-	sprintf(temp, "%s (Index)", filename);
-	allocators->allocate(&simpleMesh->m_indexBuffer, SCE_KERNEL_WC_GARLIC, simpleMesh->m_indexBufferSize, Gnm::kAlignmentOfBufferInBytes, Gnm::kResourceTypeIndexBufferBaseAddress, &simpleMesh->m_indexBufferRH, temp);
+	simpleMesh->m_vertexBuffer = new UINT8[simpleMesh->m_vertexBufferSize];
+	simpleMesh->m_indexBuffer = new UINT8[simpleMesh->m_indexBufferSize];
 	if (simpleMesh->m_indexBuffer)
 	{
 		fread(simpleMesh->m_indexBuffer, simpleMesh->m_indexBufferSize, 1, file);
@@ -599,13 +568,6 @@ void SimpeMeshBuilder::LoadSimpleMesh(SimpleMesh* simpleMesh, const char* filena
 		fread(simpleMesh->m_vertexBuffer, simpleMesh->m_vertexBufferSize, 1, file);
 	}
 	fclose(file);
-	SimpeMeshBuilder::SetMeshVertexBufferFormat(simpleMesh);
-}
-
-void SimpeMeshBuilder::LoadSimpleMesh(SimpleMesh* simpleMesh, const char* filename)
-{
-	Allocators allocators(*allocator, *allocator);
-	return LoadSimpleMesh(&allocators, simpleMesh, filename);
 }
 
 void SimpeMeshBuilder::scaleSimpleMesh(SimpleMesh* simpleMesh, float scale)
@@ -614,7 +576,7 @@ void SimpeMeshBuilder::scaleSimpleMesh(SimpleMesh* simpleMesh, float scale)
 	const UINT32 iNrVerts = simpleMesh->m_vertexCount;
 	for (UINT32 i = 0; i < iNrVerts; ++i)
 	{
-		pvVerts[i].m_position = ToVector3(pvVerts[i].m_position) * scale;
+		pvVerts[i].m_position = XMFLOAT3(pvVerts[i].m_position.x * scale, pvVerts[i].m_position.y * scale, pvVerts[i].m_position.z * scale);
 	}
 }
 

@@ -86,18 +86,19 @@ void SimpleCamera::OnUpdate(float elapsedSeconds)
 
 	// Calculate the rotatle
 	if (holdLeft)
-		m_yaw += 0.3f;
+		m_yaw += m_turnSpeed * elapsedSeconds;
 	if (holdRight)
-		m_yaw -= 0.3f;
+		m_yaw -= m_turnSpeed * elapsedSeconds;
 	if (holdUp)
-		m_pitch -= 0.1f;
+		m_pitch -= m_turnSpeed * elapsedSeconds;
 	if (holdDown)
-		m_pitch += 0.1f;
+		m_pitch += m_turnSpeed * elapsedSeconds;
 
 	if (holdAnyKey)
 	{
 		// update origin
 		move.normalize();
+		move *= m_moveSpeed * elapsedSeconds;
 		Vec3 offset = m_u * move.x() + m_w * move.z();
 		m_origin += offset;
 

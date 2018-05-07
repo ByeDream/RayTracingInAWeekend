@@ -1,0 +1,6 @@
+/RayTracer/.vs
+/RayTracer/x64
+/RayTracer/RayTracer/x64
+
+OutputImage.ppm
+*.vcxproj.user

@@ -14,75 +14,6 @@ enum BuildMeshMode {
 
 class SimpleMesh;
 
-enum IndexSize
-{
-	kIndexSize16,
-	kIndexSize32
-};
-
-enum PrimitiveType
-{
-	kPrimitiveTypeTriList,
-};
-
-struct SimpleMeshVertex
-{
-	XMFLOAT3 m_position;
-	XMFLOAT3 m_normal;
-	XMFLOAT4 m_tangent;
-	XMFLOAT4 m_color;
-	XMFLOAT2 m_texture;
-};
-
-class Mesh
-{
-public:
-	UINT32 m_vertexCount;
-	UINT32 m_vertexAttributeCount;
-	UINT32 m_vertexBufferSize;
-	UINT32 m_indexCount;
-	void *m_vertexBuffer;
-
-	IndexSize m_indexType;
-	PrimitiveType m_primitiveType;
-	UINT32 m_indexBufferSize;
-
-
-	/*
-	enum { kMaximumVertexBufferElements = 16 };
-
-	
-	uint8_t m_reserved0[4];
-	void *m_indexBuffer;
-	sce::Gnm::Buffer m_buffer[kMaximumVertexBufferElements];
-
-	sce::Gnm::ResourceHandle m_vertexBufferRH;
-	sce::Gnm::ResourceHandle m_indexBufferRH;
-
-	Matrix4 m_bufferToModel;
-
-	Mesh();
-	void SetVertexBuffer(sce::Gnmx::GnmxGfxContext &gfxc, sce::Gnm::ShaderStage stage);
-	Vector4 getElement(uint32_t attributeIndex, uint32_t elementIndex) const;
-	void setElement(uint32_t attributeIndex, uint32_t elementIndex, Vector4 value);
-
-	void copyPositionAttribute(const Mesh *source, uint32_t attribute);
-	void copyAttribute(const Mesh *source, uint32_t attribute);
-	void getMinMaxFromAttribute(Vector4 *min, Vector4 *max, uint32_t attribute) const;
-
-	void allocate(const sce::Gnm::DataFormat *dataFormat, uint32_t attributes, uint32_t elements, uint32_t indices, IAllocator* allocator);
-	void compress(const sce::Gnm::DataFormat *dataFormat, const Framework::SimpleMesh *source, IAllocator* allocator);
-	*/
-};
-
-
-class SimpleMesh : public Mesh
-{
-public:
-	UINT32 m_vertexStride; // in bytes
-	UINT32 m_reserved[3];
-};
-
 class SimpeMeshBuilder
 {
 public:
@@ -117,40 +48,17 @@ public:
 	*/
 	static void BuildSphereMesh(SimpleMesh *destMesh, float radius, long xdiv, long ydiv, float tx = 0.0f, float ty = 0.0f, float tz = 0.0f);
 
-	/** @brief Creates a SimpleMesh in the shape of a sphere.
-	* @param destMesh The mesh to receive the sphere shape.
-	* @param radius The radius of the sphere
-	* @param xdiv The number of X axis subdivisions
-	* @param ydiv The number of Y axis subdivisions
-	* @param tx The X coordinate of the sphere's center
-	* @param ty The Y coordinate of the sphere's center
-	* @param tz The Z coordinate of the sphere's center
-	*/
-	static void BuildSphereMesh(const char *name, SimpleMesh *destMesh, float radius, long xdiv, long ydiv, float tx = 0.0f, float ty = 0.0f, float tz = 0.0f);
-
 	/** @brief Creates a SimpleMesh in the shape of a quadrilateral.
 	* @param destMesh The mesh to receive the quadrilateral shape
 	* @param size Half the length of a quadrilateral edge
 	*/
 	static void BuildQuadMesh(SimpleMesh *destMesh, float size);
 
-	/** @brief Creates a SimpleMesh in the shape of a quadrilateral.
-	* @param destMesh The mesh to receive the quadrilateral shape
-	* @param size Half the length of a quadrilateral edge
-	*/
-	static void BuildQuadMesh(const char *name, SimpleMesh *destMesh, float size);
-
 	/** @brief Creates a SimpleMesh in the shape of a cube.
 	* @param destMesh The mesh to receive the cube shape
 	* @param side The length of one side of the cube
 	*/
 	static void BuildCubeMesh(SimpleMesh *destMesh, float side);
-
-	/** @brief Creates a SimpleMesh in the shape of a cube.
-	* @param destMesh The mesh to receive the cube shape
-	* @param side The length of one side of the cube
-	*/
-	static void BuildCubeMesh(const char *name, SimpleMesh *destMesh, float side);
 
 	/** @brief Computes a height map scale by analyzing a mesh's contents
 	*/
@@ -161,13 +69,6 @@ public:
 	* @param filename The path to the SimpleMesh file to save
 	*/
 	static void SaveSimpleMesh(const SimpleMesh* simplemesh, const char* filename);
-
-	/** @brief Loads a SimpleMesh from a binary file (created with SaveSimpleMesh).  The vertex data will
-	*         be stored in shared VRAM, and must be freed by the caller when the SimpleMesh is no longer required.
-	* @param simpleMesh If the load is successful, the new SimpleMesh object will be written here.
-	* @param filename The path to the SimpleMesh file to load
-	*/
-	static void LoadSimpleMesh(SimpleMesh* simpleMesh, const char* filename);
 
 	/** @brief Loads a SimpleMesh from a binary file (created with SaveSimpleMesh).  The vertex data will
 	*         be stored in shared VRAM, and must be freed by the caller when the SimpleMesh is no longer required.
