@@ -5,6 +5,9 @@
 class Mesh;
 class IMaterial;
 class Object;
+class D3D12Viewer;
+struct PipelineState;
+class SimpleCamera;
 
 enum MeshUniqueID
 {
@@ -39,8 +42,11 @@ public:
 	void									ConstructWorld();
 	void									DeconstructWorld();
 
+	void									OnUpdate(D3D12Viewer *viewer, SimpleCamera *camera, float elapsedSeconds);
+	void									OnRender(D3D12Viewer *viewer) const;
 	virtual BOOL							Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const override;
 
+	void									BuildD3DRes(D3D12Viewer *viewer);
 
 private:
 	void									LoadMeshes();
@@ -48,5 +54,14 @@ private:
 
 	std::vector<Mesh *>						m_meshes;
 	std::vector<IMaterial *>				m_materials;
-	std::vector<Object *>					m_objects;
+
+	// sort by materials to avoid pipeline state switching
+	std::vector<Object *>					m_lambertianObjects;
+	PipelineState *							m_lambertianPipelineState{ nullptr };
+	std::vector<Object *>					m_metalObjects;
+	PipelineState *							m_metalPipelineState{ nullptr };
+	std::vector<Object *>					m_dielectricObjects;
+	PipelineState *							m_dielectricPipelineState{ nullptr };
+
+	std::vector<Object *>					m_objects; // for ray tracing, don't really care about sorting
 };

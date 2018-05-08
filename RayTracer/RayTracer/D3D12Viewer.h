@@ -3,7 +3,7 @@
 class OutputImage;
 class InputListener;
 class HomemadeRayTracer;
-class SimpleCamera;
+class World;
 
 enum D3D12ViewerMode
 {
@@ -20,36 +20,53 @@ const std::string D3D12ViewerModeNames[VMODE_COUNT] =
 	"Image Viewer",
 };
 
+
+struct PipelineState
+{
+	ComPtr<ID3D12RootSignature>					m_RS;
+	ComPtr<ID3D12PipelineState>					m_PSO;
+};
+
 class D3D12Viewer
 {
 public:
-	D3D12Viewer(HWND hwnd, OutputImage *outputImage, InputListener *inputListener, HomemadeRayTracer *HMRayTracer);
+	static const UINT32							FrameCount = 3;
+
+	D3D12Viewer(HWND hwnd, OutputImage *outputImage, InputListener *inputListener, HomemadeRayTracer *HMRayTracer, World *world);
 	~D3D12Viewer();
 
 	void										OnInit();
-	void										OnUpdate(SimpleCamera *camera);
+	void										OnUpdate();
 	void										OnRender();
 	void										OnDestroy();
 	void										HelpInfo();
 
+	void										ResetCommandList(ID3D12PipelineState *initialPSO = nullptr);
+	void										ExecuteCommandList();
+	void										WaitForGpu();
+
+	inline ID3D12Device *						GetDevice() const { return m_device.Get(); }
+	inline ID3D12GraphicsCommandList *			GetGraphicsCommandList() const { return m_commandList.Get(); }
+	inline ID3D12CommandQueue *					GetCommandQueue() const { return m_commandQueue.Get(); }
+	inline UINT32								GetCurrentFrameIndex() const { return m_frameIndex; }
+
+	PipelineState *								CreatePipelineState(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &RSDesc, LPCWSTR shaderFile, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
+
 private:
 	void										LoadPipeline();
 	void										LoadAssets();
-	void										ExecuteCommandList();
-	void										WaitForGpu();
 	void										BeginDraw();
 	void										EndDraw();
 
 	void										UploadImage();
 	void										ResolveImage();
+	void										RenderWorld();
 	void										BeginBackSurface(BOOL clear = TRUE);
 	void										EndBackSurface();
 
 	void										SwitchMode(D3D12ViewerMode mode);
-private:
-	
-	static const UINT32							FrameCount = 3;
 
+private:
 	HWND										m_hwnd;
 	UINT32										m_frameIndex{ 0 };
 	UINT32										m_width{ 1028 };
@@ -57,6 +74,7 @@ private:
 	OutputImage *								m_image{ nullptr };
 	InputListener *								m_inputListener{ nullptr };
 	HomemadeRayTracer *							m_HMRayTracer{ nullptr };
+	World *										m_world{ nullptr };
 	D3D12ViewerMode								m_mode{ VMODE_SCENE_VIEWER };
 
 	CD3DX12_VIEWPORT							m_viewport;
@@ -79,6 +97,8 @@ private:
 	HANDLE										m_fenceEvent;
 	ComPtr<ID3D12Fence>							m_fence;
 	UINT64										m_fenceValues[FrameCount];
+
+	D3D12_FEATURE_DATA_ROOT_SIGNATURE			m_RSFeatureData{};
 
 	// vertexs.. TODO remove
 	struct Vertex

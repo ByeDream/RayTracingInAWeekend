@@ -90,6 +90,9 @@
     <ClInclude Include="SimpleObject.h">
       <Filter>Source\3DScene</Filter>
     </ClInclude>
+    <ClInclude Include="D3D12Helper.h">
+      <Filter>Source\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracer.cpp">
@@ -129,6 +132,9 @@
       <Filter>Source\Utils</Filter>
     </ClCompile>
     <ClCompile Include="SimpleObject.cpp">
+      <Filter>Source\3DScene</Filter>
+    </ClCompile>
+    <ClCompile Include="SimpleMesh.cpp">
       <Filter>Source\3DScene</Filter>
     </ClCompile>
   </ItemGroup>

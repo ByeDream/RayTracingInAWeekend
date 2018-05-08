@@ -6,6 +6,7 @@
 #include "SimpleObject.h"
 #include "Hitables.h"
 #include "Randomizer.h"
+#include "D3D12Viewer.h"
 
 using namespace std;
 
@@ -17,12 +18,12 @@ void World::ConstructWorld()
 	LoadMaterials();
 
 	// ground
-	m_objects.push_back(new SimpleSphereObject(Vec3(0.0f, -1000.0f, -0.0f), 1000.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_GROUND]));
+	m_lambertianObjects.push_back(new SimpleSphereObject(Vec3(0.0f, -1000.0f, -0.0f), 1000.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_GROUND]));
 
 	// bigger spheres
-	m_objects.push_back(new SimpleSphereObject(Vec3(0.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_DIELECTRIC]));
-	m_objects.push_back(new SimpleSphereObject(Vec3(-4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_LAMBERTIAN]));
-	m_objects.push_back(new SimpleSphereObject(Vec3(4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_METAL]));
+	m_lambertianObjects.push_back(new SimpleSphereObject(Vec3(-4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_LAMBERTIAN]));
+	m_dielectricObjects.push_back(new SimpleSphereObject(Vec3(0.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_DIELECTRIC]));
+	m_metalObjects.push_back(new SimpleSphereObject(Vec3(4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_METAL]));
 
 	// random smaller spheres
 #if 1
@@ -35,28 +36,54 @@ void World::ConstructWorld()
 			if ((center - Vec3(4.0f, 0.2f, 0.0f)).length() > 0.9f)
 			{
 				MaterialUniqueID materialID = MATERIAL_ID_DIELECTRIC;
+				std::vector<Object *> &objectPool = m_dielectricObjects;
 				if (chooseMat < 0.8f) 
 				{
 					//diffuse
 					materialID = (MaterialUniqueID)(UINT32)(MATERIAL_ID_RANDOM_LAMBERTIAN_START + Randomizer::RandomUNorm() * MATERIAL_ID_RANDOM_LAMBERTIAN_COUNT);
+					objectPool = m_lambertianObjects;
 				}
 				else if (chooseMat < 0.95)
 				{
 					// metal
 					materialID = (MaterialUniqueID)(UINT32)(MATERIAL_ID_RANDOM_METAL_START + Randomizer::RandomUNorm() * MATERIAL_ID_RANDOM_METAL_COUNT);
+					objectPool = m_metalObjects;
 				}
-				m_objects.push_back(new SimpleSphereObject(center, 0.2f, m_meshes[MESH_ID_LOW_POLYGON_SPHERE], m_materials[materialID]));
-
+				
+				objectPool.push_back(new SimpleSphereObject(center, 0.2f, m_meshes[MESH_ID_LOW_POLYGON_SPHERE], m_materials[materialID]));
 			}
 		}
 	}
 #endif
+
+	for (auto i = m_lambertianObjects.begin(); i != m_lambertianObjects.end(); i++)
+		m_objects.push_back(*i);
+	for (auto i = m_metalObjects.begin(); i != m_metalObjects.end(); i++)
+		m_objects.push_back(*i);
+	for (auto i = m_dielectricObjects.begin(); i != m_dielectricObjects.end(); i++)
+		m_objects.push_back(*i);
 }
 
 
 void World::DeconstructWorld()
 {
 	cout << "[World] DeconstructWorld" << endl;
+
+	if (m_lambertianPipelineState)
+	{
+		delete m_lambertianPipelineState;
+		m_lambertianPipelineState = nullptr;
+	}
+	if (m_metalPipelineState)
+	{
+		delete m_metalPipelineState;
+		m_metalPipelineState = nullptr;
+	}
+	if (m_dielectricPipelineState)
+	{
+		delete m_dielectricPipelineState;
+		m_dielectricPipelineState = nullptr;
+	}
 
 	for (auto i = m_objects.begin(); i != m_objects.end(); i++)
 	{
@@ -83,6 +110,40 @@ void World::DeconstructWorld()
 	}
 }
 
+void World::OnUpdate(D3D12Viewer *viewer, SimpleCamera *camera, float elapsedSeconds)
+{
+	for (auto i = m_objects.begin(); i != m_objects.end(); i++)
+	{
+		(*i)->Update(viewer, camera, elapsedSeconds);
+	}
+}
+
+void World::OnRender(D3D12Viewer *viewer) const
+{
+	ID3D12GraphicsCommandList *commandList = viewer->GetGraphicsCommandList();
+
+	commandList->SetPipelineState(m_lambertianPipelineState->m_PSO.Get());
+	commandList->SetGraphicsRootSignature(m_lambertianPipelineState->m_RS.Get());
+	for (auto i = m_lambertianObjects.begin(); i != m_lambertianObjects.end(); i++)
+	{
+		(*i)->Render(viewer);
+	}
+
+	commandList->SetPipelineState(m_metalPipelineState->m_PSO.Get());
+	commandList->SetGraphicsRootSignature(m_metalPipelineState->m_RS.Get());
+	for (auto i = m_metalObjects.begin(); i != m_metalObjects.end(); i++)
+	{
+		(*i)->Render(viewer);
+	}
+
+	commandList->SetPipelineState(m_dielectricPipelineState->m_PSO.Get());
+	commandList->SetGraphicsRootSignature(m_dielectricPipelineState->m_RS.Get());
+	for (auto i = m_dielectricObjects.begin(); i != m_dielectricObjects.end(); i++)
+	{
+		(*i)->Render(viewer);
+	}
+}
+
 BOOL World::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const
 {
 	HitRecord rec;
@@ -98,6 +159,37 @@ BOOL World::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) cons
 		}
 	}
 	return hitAnything;
+}
+
+void World::BuildD3DRes(D3D12Viewer *viewer)
+{
+	for (auto i = m_meshes.begin(); i != m_meshes.end(); i++)
+	{
+		(*i)->BuildD3DRes(viewer);
+	}
+
+	for (auto i = m_objects.begin(); i != m_objects.end(); i++)
+	{
+		(*i)->BuildD3DRes(viewer);
+	}
+
+	// create pso
+	CD3DX12_DESCRIPTOR_RANGE1 ranges[1];
+	ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+
+	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
+	rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_VERTEX);
+
+	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	D3D12_INPUT_LAYOUT_DESC inputLayout{ SimpleMesh::D3DVertexDeclaration, SimpleMesh::D3DVertexDeclarationElementCount };
+
+	m_lambertianPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\meshShaders.hlsl", inputLayout);
+
+	m_metalPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\meshShaders.hlsl", inputLayout);
+
+	m_dielectricPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\meshShaders.hlsl", inputLayout);
 }
 
 void World::LoadMeshes()
