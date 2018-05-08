@@ -49,6 +49,7 @@ public:
 	inline ID3D12GraphicsCommandList *			GetGraphicsCommandList() const { return m_commandList.Get(); }
 	inline ID3D12CommandQueue *					GetCommandQueue() const { return m_commandQueue.Get(); }
 	inline UINT32								GetCurrentFrameIndex() const { return m_frameIndex; }
+	inline D3D12ViewerMode						GetMode() const { return m_mode; }
 
 	PipelineState *								CreatePipelineState(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &RSDesc, LPCWSTR shaderFile, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
 

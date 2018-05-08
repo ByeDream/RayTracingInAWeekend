@@ -34,6 +34,7 @@ SimpleCamera::SimpleCamera(
 	, m_moveSpeed(0.0f)
 	, m_turnSpeed(0.0f)
 {
+	m_inputListener->RegisterKey('H');
 	m_inputListener->RegisterKey('W');
 	m_inputListener->RegisterKey('A');
 	m_inputListener->RegisterKey('S');
@@ -109,6 +110,11 @@ void SimpleCamera::OnUpdate(float elapsedSeconds)
 
 		AutoFocus(lookDir);
 		InternalUpdate();
+	}
+
+	if (m_inputListener->WhenReleaseKey('H'))
+	{
+		HelpInfo();
 	}
 }
 

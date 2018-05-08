@@ -26,8 +26,10 @@ SimpleSphereObject::~SimpleSphereObject()
 	}
 }
 
-void SimpleSphereObject::Update(D3D12Viewer *viewer, SimpleCamera *camera, float elapsedSeconds)
+void SimpleSphereObject::Update(SimpleCamera *camera, float elapsedSeconds)
 {
+	m_d3dRes.m_VSCurrentCbvIndex = (m_d3dRes.m_VSCurrentCbvIndex + 1) % D3D12Viewer::FrameCount;
+
 	XMMATRIX model;
 	XMFLOAT4X4 mvp;
 
@@ -36,7 +38,7 @@ void SimpleSphereObject::Update(D3D12Viewer *viewer, SimpleCamera *camera, float
 	DirectX::XMStoreFloat4x4(&mvp, DirectX::XMMatrixTranspose(model * camera->GetViewMatrix() * camera->GetProjectionMatrix()));
 
 	// Copy this matrix into the appropriate location in the upload heap subresource.
-	memcpy(&m_d3dRes.m_pVSConstants[viewer->GetCurrentFrameIndex()], &mvp, sizeof(mvp));
+	memcpy(&m_d3dRes.m_pVSConstants[m_d3dRes.m_VSCurrentCbvIndex], &mvp, sizeof(mvp));
 }
 
 void SimpleSphereObject::Render(D3D12Viewer *viewer) const
@@ -46,7 +48,7 @@ void SimpleSphereObject::Render(D3D12Viewer *viewer) const
 	ID3D12DescriptorHeap* ppHeaps[] = { m_d3dRes.m_VSCbvHeap.Get() };
 	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 	UINT32 handleOffset = viewer->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	CD3DX12_GPU_DESCRIPTOR_HANDLE cbvHandle(m_d3dRes.m_VSCbvHeap->GetGPUDescriptorHandleForHeapStart(), viewer->GetCurrentFrameIndex(), handleOffset);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE cbvHandle(m_d3dRes.m_VSCbvHeap->GetGPUDescriptorHandleForHeapStart(), m_d3dRes.m_VSCurrentCbvIndex, handleOffset);
 	commandList->SetGraphicsRootDescriptorTable(0, cbvHandle);
 
 	commandList->IASetPrimitiveTopology(ConvertPrimitiveType(m_mesh->m_primitiveType));
@@ -99,5 +101,7 @@ void SimpleSphereObject::BuildD3DRes(D3D12Viewer *viewer)
 			device->CreateConstantBufferView(&cbvDesc, cbvHandle);
 			cbvHandle.Offset(handleOffset);
 		}
+
+		m_d3dRes.m_VSCurrentCbvIndex = 0;
 	}
 }

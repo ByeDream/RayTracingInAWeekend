@@ -76,7 +76,7 @@ public:
 	static D3D12_INPUT_ELEMENT_DESC D3DVertexDeclaration[];
 	static UINT32 D3DVertexDeclarationElementCount;
 
-	virtual ~SimpleMesh()
+	virtual ~SimpleMesh() override
 	{
 		if (m_vertexBuffer)
 			delete m_vertexBuffer;

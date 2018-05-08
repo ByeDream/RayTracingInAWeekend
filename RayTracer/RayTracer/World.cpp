@@ -36,21 +36,21 @@ void World::ConstructWorld()
 			if ((center - Vec3(4.0f, 0.2f, 0.0f)).length() > 0.9f)
 			{
 				MaterialUniqueID materialID = MATERIAL_ID_DIELECTRIC;
-				std::vector<Object *> &objectPool = m_dielectricObjects;
+				std::vector<Object *> *objectPool = &m_dielectricObjects;
 				if (chooseMat < 0.8f) 
 				{
 					//diffuse
 					materialID = (MaterialUniqueID)(UINT32)(MATERIAL_ID_RANDOM_LAMBERTIAN_START + Randomizer::RandomUNorm() * MATERIAL_ID_RANDOM_LAMBERTIAN_COUNT);
-					objectPool = m_lambertianObjects;
+					objectPool = &m_lambertianObjects;
 				}
 				else if (chooseMat < 0.95)
 				{
 					// metal
 					materialID = (MaterialUniqueID)(UINT32)(MATERIAL_ID_RANDOM_METAL_START + Randomizer::RandomUNorm() * MATERIAL_ID_RANDOM_METAL_COUNT);
-					objectPool = m_metalObjects;
+					objectPool = &m_metalObjects;
 				}
 				
-				objectPool.push_back(new SimpleSphereObject(center, 0.2f, m_meshes[MESH_ID_LOW_POLYGON_SPHERE], m_materials[materialID]));
+				objectPool->push_back(new SimpleSphereObject(center, 0.2f, m_meshes[MESH_ID_LOW_POLYGON_SPHERE], m_materials[materialID]));
 			}
 		}
 	}
@@ -110,11 +110,11 @@ void World::DeconstructWorld()
 	}
 }
 
-void World::OnUpdate(D3D12Viewer *viewer, SimpleCamera *camera, float elapsedSeconds)
+void World::OnUpdate(SimpleCamera *camera, float elapsedSeconds)
 {
 	for (auto i = m_objects.begin(); i != m_objects.end(); i++)
 	{
-		(*i)->Update(viewer, camera, elapsedSeconds);
+		(*i)->Update(camera, elapsedSeconds);
 	}
 }
 

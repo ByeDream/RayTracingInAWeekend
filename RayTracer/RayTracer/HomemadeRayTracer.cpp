@@ -31,7 +31,7 @@ HomemadeRayTracer::~HomemadeRayTracer()
 void HomemadeRayTracer::OnInit()
 {
 	cout << "[HomemadeRayTracer] Init" << endl;
-	m_inputListener->RegisterKey('R');
+	m_inputListener->RegisterKey(VK_SPACE);
 	m_inputListener->RegisterKey('H');
 	m_inputListener->RegisterKey('N');
 	m_inputListener->RegisterKey('M');
@@ -39,7 +39,7 @@ void HomemadeRayTracer::OnInit()
 
 void HomemadeRayTracer::OnUpdate(const SimpleCamera *camera, OutputImage *image)
 {
-	if (m_inputListener->WhenReleaseKey('R'))
+	if (m_inputListener->WhenReleaseKey(VK_SPACE))
 	{
 		Render(camera, image);
 	}
@@ -74,7 +74,7 @@ void HomemadeRayTracer::HelpInfo()
 	cout << "=============HomemadeRayTracer============" << endl;
 	cout << "[Hot keys]" << endl;
 	cout << "  [h] Display this message." << endl;
-	cout << "  [r] Render result to output image and upload it to viewer." << endl;
+	cout << "  [space] Render result to output image and upload it to viewer." << endl;
 	cout << "  [n] Switch on/off normal display." << endl;
 	cout << "  [m] Switch on/off anti-aliasing." << endl;
 	cout << "[NormalDisplay] " << (m_enableNormalDisplay ? "Enabled" : "Disabled") << endl;
