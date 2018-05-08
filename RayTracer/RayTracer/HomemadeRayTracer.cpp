@@ -2,7 +2,7 @@
 #include "HomemadeRayTracer.h"
 
 #include "Ray.h"
-#include "Hitables.h"
+#include "World.h"
 #include "OutputImage.h"
 #include "SimpleCamera.h"
 #include "Randomizer.h"
@@ -16,7 +16,7 @@ using namespace std;
 #define SAMPLE_COUNT 100
 #define MAX_SAMPLE_DEPTH  50
 
-HomemadeRayTracer::HomemadeRayTracer(InputListener *inputListener, OutputImage *image, const Hitable *world)
+HomemadeRayTracer::HomemadeRayTracer(InputListener *inputListener, OutputImage *image, const World *world)
 	: m_inputListener(inputListener)
 	, m_world(world)
 {

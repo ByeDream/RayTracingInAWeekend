@@ -50,20 +50,3 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 	}
 	return FALSE; // no hit
 }
-
-BOOL HitableCombo::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const
-{
-	HitRecord rec;
-	BOOL hitAnything = FALSE;
-	float cloestSoFar = t_max;
-	for (auto i = m_hitableListRef.begin(); i != m_hitableListRef.end(); i++)
-	{
-		if ((*i)->Hit(r, t_min, cloestSoFar, rec))
-		{
-			hitAnything = TRUE;
-			cloestSoFar = rec.m_time;
-			out_rec = rec;
-		}
-	}
-	return hitAnything;
-}

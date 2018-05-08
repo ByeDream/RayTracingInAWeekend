@@ -38,6 +38,8 @@ public:
 		, m_indexType(kIndexSize16)
 		, m_primitiveType(kPrimitiveTypeTriList)
 	{}
+
+	virtual ~Mesh() = default;
 };
 
 
@@ -63,5 +65,13 @@ enum SimpleMeshVertexBufferElement
 class SimpleMesh : public Mesh
 {
 public:
+	virtual ~SimpleMesh()
+	{
+		if (m_vertexBuffer)
+			delete m_vertexBuffer;
+		if (m_indexBuffer)
+			delete m_vertexBuffer;
+	}
+
 	UINT32 m_vertexStride; // in bytes
 };

@@ -5,13 +5,13 @@
 class Ray;
 struct HitRecord;
 
-class Material
+class IMaterial
 {
 public:
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const = 0;
 };
 
-class Lambertian : public Material
+class Lambertian : public IMaterial
 {
 public:
 	Lambertian(const Vec3 &albedo) : m_albedo(albedo) {}
@@ -19,7 +19,7 @@ public:
 	Vec3 m_albedo; // the reflectance
 };
 
-class Metal : public Material
+class Metal : public IMaterial
 {
 public:
 	Metal(const Vec3 &albedo, float fuzziness) : m_albedo(albedo) { m_fuzziness = (fuzziness < 1.0f) ? ((fuzziness >= 0.0f) ? fuzziness : 0.0f) : 1.0f; }
@@ -28,7 +28,7 @@ public:
 	float  m_fuzziness;
 };
 
-class Dielectric : public Material
+class Dielectric : public IMaterial
 {
 public:
 	Dielectric(float refractiveIndex) : m_refractiveIndex(refractiveIndex) { }

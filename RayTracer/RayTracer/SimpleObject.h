@@ -2,26 +2,28 @@
 
 #include "Vec3.h"
 
-class SimpleMesh;
-class Hitable;
-class Material;
+class Mesh;
+class IHitable;
+class IMaterial;
 
-class SimpleObject
+class Object
 {
 public:
+	virtual ~Object() = default;
 	Vec3						m_position;
 	float						m_scale;
 	// TODO for rotation
 
-	SimpleMesh *				m_mesh;
-	Hitable *					m_hitable;
-	Material *					m_material;
+	Mesh *						m_mesh;
+	IHitable *					m_hitable;
+	IMaterial *					m_material;
 };
 
-class SphereSimpleObject : public SimpleObject
+class SimpleSphereObject : public Object
 {
 public:
-	SphereSimpleObject(const Vec3 &center, float radius);
+	SimpleSphereObject(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material);
+	virtual ~SimpleSphereObject();
 };
 
 // TODO more

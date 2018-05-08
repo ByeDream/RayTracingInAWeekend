@@ -179,6 +179,7 @@
     <ClInclude Include="SimpeMeshBuilder.h" />
     <ClInclude Include="SimpleCamera.h" />
     <ClInclude Include="SimpleMesh.h" />
+    <ClInclude Include="SimpleObject.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="StepTimer.h" />
     <ClInclude Include="targetver.h" />
@@ -196,6 +197,7 @@
     <ClCompile Include="RayTracer.cpp" />
     <ClCompile Include="SimpeMeshBuilder.cpp" />
     <ClCompile Include="SimpleCamera.cpp" />
+    <ClCompile Include="SimpleObject.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

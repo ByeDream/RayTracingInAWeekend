@@ -6,12 +6,12 @@ class OutputImage;
 class Ray;
 class InputListener;
 class SimpleCamera;
-class Hitable;
+class World;
 
 class HomemadeRayTracer
 {
 public:
-	HomemadeRayTracer(InputListener *inputListener, OutputImage *image, const Hitable *world);
+	HomemadeRayTracer(InputListener *inputListener, OutputImage *image, const World *world);
 	~HomemadeRayTracer();
 
 	void						OnInit();
@@ -29,5 +29,5 @@ private:
 	BOOL						m_enableNormalDisplay{ FALSE };
 	BOOL						m_enableSingleRay{ FALSE };
 
-	const Hitable *				m_world{ nullptr };
+	const World *				m_world{ nullptr };
 };

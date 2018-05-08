@@ -193,7 +193,7 @@ BOOL SimpleCamera::AutoFocus(const Vec3 &lookDir)
 {
 	HitRecord rec;
 	Ray r(m_origin, lookDir);
-	if (m_world->GetRootHitable()->Hit(r, 0.01f, FLT_MAX, rec))
+	if (m_world->Hit(r, 0.01f, FLT_MAX, rec))
 	{
 		m_focus = rec.m_position;
 	}
