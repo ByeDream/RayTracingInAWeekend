@@ -200,7 +200,7 @@ void World::LoadMeshes()
 {
 	// MESH_ID_HIGH_POLYGON_SPHERE
 	SimpleMesh *highPolygonSphere = new SimpleMesh();
-	SimpeMeshBuilder::BuildSphereMesh(highPolygonSphere, 1.0f, 40, 200);
+	SimpeMeshBuilder::BuildSphereMesh(highPolygonSphere, 1.0f, 200, 200);
 	m_meshes.push_back(highPolygonSphere);
 
 	// MESH_ID_MEDIUM_POLYGON_SPHERE
