@@ -48,6 +48,7 @@ public:
 
 	void									BuildD3DRes(D3D12Viewer *viewer);
 
+	static const Vec3						SkyLight;
 private:
 	void									LoadMeshes();
 	void									LoadMaterials();

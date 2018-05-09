@@ -6,6 +6,11 @@
 #include "Randomizer.h"
 #include "Optics.h"
 
+Lambertian::Lambertian(const Vec3 &albedo)
+{
+	DirectX::XMStoreFloat4(&m_data.m_albedo, albedo.m_simd);
+}
+
 BOOL Lambertian::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const
 {
 	// For simplicity,  scatter always and attenuate by its reflectance R, 
@@ -17,18 +22,29 @@ BOOL Lambertian::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuatio
 	// recursively sample the indirect light with absorb half the energy(50% reflectors), until reach the sky light 
 	Vec3 target = rec.m_position + rec.m_normal + Randomizer::RomdomInUnitSphere();
 	r_scattered = Ray(rec.m_position, target - rec.m_position);
-	attenuation = m_albedo;
+	attenuation = DirectX::XMLoadFloat4(&m_data.m_albedo);
 	return TRUE; // always
 }
 
+
+Metal::Metal(const Vec3 &albedo, float fuzziness)
+{
+	DirectX::XMStoreFloat4(&m_data.m_albedo, albedo.m_simd);
+	m_data.m_fuzziness.x = (fuzziness < 1.0f) ? ((fuzziness >= 0.0f) ? fuzziness : 0.0f) : 1.0f;
+}
 
 BOOL Metal::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const
 {
 	Vec3 r_reflected;
 	Optics::Reflect(normalize(r_in.m_dir), rec.m_normal, r_reflected);
-	r_scattered = Ray(rec.m_position, r_reflected + m_fuzziness * Randomizer::RomdomInUnitSphere());
-	attenuation = m_albedo;
+	r_scattered = Ray(rec.m_position, r_reflected + m_data.m_fuzziness.x * Randomizer::RomdomInUnitSphere());
+	attenuation = DirectX::XMLoadFloat4(&m_data.m_albedo);
 	return (dot(r_scattered.m_dir, rec.m_normal) > 0); // absorb the scatter ray if it is below the surface
+}
+
+Dielectric::Dielectric(float refractiveIndex)
+{
+	m_data.m_refractiveIndex.x = refractiveIndex;
 }
 
 BOOL Dielectric::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const
@@ -45,20 +61,20 @@ BOOL Dielectric::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuatio
 	if (dot(uv, rec.m_normal) > 0) {
 		// from internal to outside
 		outward_normal = -rec.m_normal;
-		ni_over_nt = m_refractiveIndex;  // device by air ref index(1.0f)
-		cosine = m_refractiveIndex * dot(uv, rec.m_normal);
+		ni_over_nt = m_data.m_refractiveIndex.x;  // device by air ref index(1.0f)
+		cosine = m_data.m_refractiveIndex.x * dot(uv, rec.m_normal);
 	}
 	else
 	{
 		// from outside to internal
 		outward_normal = rec.m_normal;
-		ni_over_nt = 1.0f / m_refractiveIndex;  // device by air ref index(1.0f)
+		ni_over_nt = 1.0f / m_data.m_refractiveIndex.x;  // device by air ref index(1.0f)
 		cosine = -dot(uv, rec.m_normal);
 	}
 
 	if (Optics::Refract(uv, outward_normal, ni_over_nt, r_refracted))
 	{
-		reflect_prob = Optics::Schlick(cosine, m_refractiveIndex);
+		reflect_prob = Optics::Schlick(cosine, m_data.m_refractiveIndex.x);
 	}
 	else
 	{

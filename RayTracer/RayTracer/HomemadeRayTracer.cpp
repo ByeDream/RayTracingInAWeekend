@@ -176,12 +176,11 @@ Vec3 HomemadeRayTracer::Sample(const Ray &r, UINT32 depth) const
 	}
 	else
 	{
-		// Sky light
-		// blends white and blue depending on the up/downess of the y coordinate
+		// blends white and Sky light depending on the up/downess of the y coordinate
 		Vec3 dir = normalize(r.m_dir);
 		float t = 0.5f * (dir.y() + 1.0f);
 		// lerp
-		col = (1.0f - t) * Vec3(1.0f, 1.0f, 1.0f) + t * Vec3(0.5f, 0.7f, 1.0f);
+		col = (1.0f - t) * Vec3(1.0f, 1.0f, 1.0f) + t * World::SkyLight;
 	}
 
 	return col;

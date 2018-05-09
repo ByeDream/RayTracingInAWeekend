@@ -10,6 +10,8 @@
 
 using namespace std;
 
+const Vec3 World::SkyLight(0.5f, 0.7f, 1.0f);
+
 void World::ConstructWorld()
 {
 	cout << "[World] ConstructWorld" << endl;
@@ -174,22 +176,24 @@ void World::BuildD3DRes(D3D12Viewer *viewer)
 	}
 
 	// create pso
-	CD3DX12_DESCRIPTOR_RANGE1 ranges[1];
+	CD3DX12_DESCRIPTOR_RANGE1 ranges[2];
 	ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+	ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
-	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[2];
 	rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_VERTEX);
+	rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_PIXEL);
 
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
 	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	D3D12_INPUT_LAYOUT_DESC inputLayout{ SimpleMesh::D3DVertexDeclaration, SimpleMesh::D3DVertexDeclarationElementCount };
 
-	m_lambertianPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\meshShaders.hlsl", inputLayout);
+	m_lambertianPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\lambertian.hlsl", inputLayout, TRUE, TRUE);
 
-	m_metalPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\meshShaders.hlsl", inputLayout);
+	m_metalPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\metal.hlsl", inputLayout, TRUE, TRUE);
 
-	m_dielectricPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\meshShaders.hlsl", inputLayout);
+	m_dielectricPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\dielectric.hlsl", inputLayout, TRUE, TRUE);
 }
 
 void World::LoadMeshes()

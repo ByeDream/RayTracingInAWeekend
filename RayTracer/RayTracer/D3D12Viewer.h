@@ -51,7 +51,12 @@ public:
 	inline UINT32								GetCurrentFrameIndex() const { return m_frameIndex; }
 	inline D3D12ViewerMode						GetMode() const { return m_mode; }
 
-	PipelineState *								CreatePipelineState(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &RSDesc, LPCWSTR shaderFile, const D3D12_INPUT_LAYOUT_DESC &inputLayout);
+	PipelineState *								CreatePipelineState(
+		const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &RSDesc, 
+		LPCWSTR VSFile, LPCWSTR PSFile, 
+		const D3D12_INPUT_LAYOUT_DESC &inputLayout,
+		BOOL depthTest, BOOL depthWrite
+	);
 
 private:
 	void										LoadPipeline();
@@ -84,11 +89,13 @@ private:
 	ComPtr<ID3D12CommandQueue>					m_commandQueue;
 	ComPtr<IDXGISwapChain3>						m_swapChain;
 	ComPtr<ID3D12Resource>						m_renderTargets[FrameCount];
+	ComPtr<ID3D12Resource>						m_depthStencil;
 	ComPtr<ID3D12CommandAllocator>				m_commandAllocators[FrameCount];
 	ComPtr<ID3D12RootSignature>					m_rootSignature;
 	ComPtr<ID3D12PipelineState>					m_pipelineState;
 	ComPtr<ID3D12GraphicsCommandList>			m_commandList;
 	ComPtr<ID3D12DescriptorHeap>				m_rtvHeap;
+	ComPtr<ID3D12DescriptorHeap>				m_dsvHeap;
 	UINT32										m_rtvDescriptorSize{ 0 };
 	ComPtr<ID3D12DescriptorHeap>				m_srvHeap;
 	ComPtr<ID3D12Resource>						m_texture;

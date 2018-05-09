@@ -9,31 +9,50 @@ class IMaterial
 {
 public:
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const = 0;
+	virtual size_t GetDataSize() const = 0;
 };
 
 class Lambertian : public IMaterial
 {
 public:
-	Lambertian(const Vec3 &albedo) : m_albedo(albedo) {}
+	struct Data // always use XMFLOAT4 for fix padding
+	{
+		XMFLOAT4 m_albedo; // the reflectance
+	};
+	Data m_data;
+
+	Lambertian(const Vec3 &albedo);
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const override;
-	Vec3 m_albedo; // the reflectance
+	virtual size_t GetDataSize() const override { return sizeof(Lambertian::Data); }
 };
 
 class Metal : public IMaterial
 {
 public:
-	Metal(const Vec3 &albedo, float fuzziness) : m_albedo(albedo) { m_fuzziness = (fuzziness < 1.0f) ? ((fuzziness >= 0.0f) ? fuzziness : 0.0f) : 1.0f; }
+	struct Data // always use XMFLOAT4 for fix padding
+	{
+		XMFLOAT4 m_albedo; // the reflectance
+		XMFLOAT4 m_fuzziness;
+	};
+	Data m_data;
+
+	Metal(const Vec3 &albedo, float fuzziness);
+	
+	
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const override;
-	Vec3 m_albedo; // the reflectance
-	float  m_fuzziness;
+	virtual size_t GetDataSize() const override { return sizeof(Metal::Data); }
 };
 
 class Dielectric : public IMaterial
 {
 public:
-	Dielectric(float refractiveIndex) : m_refractiveIndex(refractiveIndex) { }
+	struct Data // always use XMFLOAT4 for fix padding
+	{
+		XMFLOAT4 m_refractiveIndex;
+	};
+	Data m_data;
+
+	Dielectric(float refractiveIndex); 
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const override;
-	//Vec3 m_albedo; // the reflectance
-	//float  m_fuzziness;
-	float m_refractiveIndex;
+	virtual size_t GetDataSize() const override { return sizeof(Metal::Data); }
 };

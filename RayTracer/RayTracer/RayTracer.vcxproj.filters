@@ -22,6 +22,9 @@
     <Filter Include="Source\3DScene">
       <UniqueIdentifier>{8be7adfc-846d-4959-8551-001e579c996e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Assets\Shaders">
+      <UniqueIdentifier>{7b888e87-ba36-41a1-a410-aa4e25b56a3a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RayTracer.h">
@@ -152,11 +155,20 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\Assets\shaders.hlsl">
-      <Filter>Assets</Filter>
+    <FxCompile Include="..\Assets\dielectric.hlsl">
+      <Filter>Assets\Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="..\Assets\meshShaders.hlsl">
-      <Filter>Assets</Filter>
+    <FxCompile Include="..\Assets\lambertian.hlsl">
+      <Filter>Assets\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Assets\metal.hlsl">
+      <Filter>Assets\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Assets\resloveImage.hlsl">
+      <Filter>Assets\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Assets\sceneGeometry_vs.hlsl">
+      <Filter>Assets\Shaders</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

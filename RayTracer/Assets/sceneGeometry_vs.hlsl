@@ -12,7 +12,7 @@ struct PSInput
 	float2 uv : TEXCOORD;
 };
 
-cbuffer cb0 : register(b0)
+cbuffer VSCBuffer : register(b0)
 {
 	float4x4 g_mWorldViewProj;
 };
@@ -25,9 +25,4 @@ PSInput VSMain(VSInput input)
 	result.uv = input.uv;
 
 	return result;
-}
-
-float4 PSMain(PSInput input) : SV_TARGET
-{
-	return float4(1.0f, 0.0f, 0.0f, 1.0f);
 }

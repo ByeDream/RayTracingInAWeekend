@@ -201,6 +201,13 @@ void D3D12Viewer::LoadPipeline()
 
 		m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
+		// Describe and create a depth stencil view (DSV) descriptor heap.
+		D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
+		dsvHeapDesc.NumDescriptors = 1;
+		dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+		dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		ThrowIfFailed(m_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
+
 		// Describe and create a shader resource view (SRV) heap for the texture.
 		D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
 		srvHeapDesc.NumDescriptors = 1;
@@ -239,6 +246,31 @@ void D3D12Viewer::LoadAssets()
 	if (FAILED(m_device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &m_RSFeatureData, sizeof(m_RSFeatureData))))
 	{
 		m_RSFeatureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+	}
+
+	// Create the depth stencil view.
+	{
+		D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
+		depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
+		depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+		depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
+
+		D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
+		depthOptimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+		depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
+		depthOptimizedClearValue.DepthStencil.Stencil = 0;
+
+		ThrowIfFailed(m_device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_width, m_height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+			D3D12_RESOURCE_STATE_DEPTH_WRITE,
+			&depthOptimizedClearValue,
+			IID_PPV_ARGS(&m_depthStencil)
+		));
+		NAME_D3D12_OBJECT(m_depthStencil);
+
+		m_device->CreateDepthStencilView(m_depthStencil.Get(), &depthStencilDesc, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
 	}
 
 	// Create the command list.
@@ -314,8 +346,8 @@ void D3D12Viewer::LoadAssets()
 			UINT compileFlags = 0;
 #endif
 
-			ThrowIfFailed(D3DCompileFromFile(L"..\\Assets\\shaders.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
-			ThrowIfFailed(D3DCompileFromFile(L"..\\Assets\\shaders.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
+			ThrowIfFailed(D3DCompileFromFile(L"..\\Assets\\resloveImage.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
+			ThrowIfFailed(D3DCompileFromFile(L"..\\Assets\\resloveImage.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
 
 			// Define the vertex input layout.
 			D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
@@ -482,7 +514,7 @@ void D3D12Viewer::WaitForGpu()
 	m_fenceValues[m_frameIndex]++;
 }
 
-PipelineState * D3D12Viewer::CreatePipelineState(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &RSDesc, LPCWSTR shaderFile, const D3D12_INPUT_LAYOUT_DESC &inputLayout)
+PipelineState * D3D12Viewer::CreatePipelineState(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &RSDesc, LPCWSTR VSFile, LPCWSTR PSFile, const D3D12_INPUT_LAYOUT_DESC &inputLayout, BOOL depthTest, BOOL depthWrite)
 {
 	PipelineState *pso = new PipelineState;
 	// Create the root signature.
@@ -502,8 +534,8 @@ PipelineState * D3D12Viewer::CreatePipelineState(const CD3DX12_VERSIONED_ROOT_SI
 	UINT compileFlags = 0;
 #endif
 
-	ThrowIfFailed(D3DCompileFromFile(shaderFile, nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
-	ThrowIfFailed(D3DCompileFromFile(shaderFile, nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
+	ThrowIfFailed(D3DCompileFromFile(VSFile, nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
+	ThrowIfFailed(D3DCompileFromFile(PSFile, nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
 
 		
 	// Describe and create the graphics pipeline state object (PSO).
@@ -514,7 +546,9 @@ PipelineState * D3D12Viewer::CreatePipelineState(const CD3DX12_VERSIONED_ROOT_SI
 	psoDesc.PS = CD3DX12_SHADER_BYTECODE(pixelShader.Get());
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.DepthStencilState.DepthEnable = FALSE;
+	psoDesc.DepthStencilState.DepthEnable = depthTest;
+	psoDesc.DepthStencilState.DepthFunc = depthTest ? D3D12_COMPARISON_FUNC_LESS_EQUAL : D3D12_COMPARISON_FUNC_ALWAYS;
+	psoDesc.DepthStencilState.DepthWriteMask = depthWrite ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
 	psoDesc.DepthStencilState.StencilEnable = FALSE;
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
@@ -608,7 +642,8 @@ void D3D12Viewer::RenderWorld()
 	ResetCommandList();
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle1(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
-	m_commandList->OMSetRenderTargets(1, &rtvHandle1, FALSE, nullptr);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
+	m_commandList->OMSetRenderTargets(1, &rtvHandle1, FALSE, &dsvHandle);
 	m_commandList->RSSetViewports(1, &m_viewport);
 	m_commandList->RSSetScissorRects(1, &m_scissorRect);
 
@@ -627,10 +662,11 @@ void D3D12Viewer::BeginBackSurface(BOOL clear)
 	if (clear)
 	{
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
-		m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
-
-		const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+		CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
+		m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+		const float clearColor[] = { World::SkyLight.r(), World::SkyLight.g(), World::SkyLight.b(), 1.0f };
 		m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+		m_commandList->ClearDepthStencilView(m_dsvHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	}
 	
 

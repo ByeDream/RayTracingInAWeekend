@@ -30,12 +30,14 @@ void SimpleSphereObject::Update(SimpleCamera *camera, float elapsedSeconds)
 {
 	m_d3dRes.m_VSCurrentCbvIndex = (m_d3dRes.m_VSCurrentCbvIndex + 1) % D3D12Viewer::FrameCount;
 
-	XMMATRIX model;
+	XMMATRIX scale;
+	XMMATRIX trans;
 	XMFLOAT4X4 mvp;
 
-	model = DirectX::XMMatrixTranslationFromVector(m_position.m_simd);
+	trans = DirectX::XMMatrixTranslationFromVector(m_position.m_simd);
+	scale = DirectX::XMMatrixScaling(m_scale, m_scale, m_scale);
 	// Compute the model-view-projection matrix.
-	DirectX::XMStoreFloat4x4(&mvp, DirectX::XMMatrixTranspose(model * camera->GetViewMatrix() * camera->GetProjectionMatrix()));
+	DirectX::XMStoreFloat4x4(&mvp, DirectX::XMMatrixTranspose(scale * trans * camera->GetViewMatrix() * camera->GetProjectionMatrix()));
 
 	// Copy this matrix into the appropriate location in the upload heap subresource.
 	memcpy(&m_d3dRes.m_pVSConstants[m_d3dRes.m_VSCurrentCbvIndex], &mvp, sizeof(mvp));
