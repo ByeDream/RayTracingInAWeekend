@@ -33,15 +33,18 @@ void SimpleSphereObject::Update(SimpleCamera *camera, float elapsedSeconds)
 {
 	XMMATRIX scale;
 	XMMATRIX trans;
-	XMFLOAT4X4 mvp;
+	XMMATRIX mv;
+	GeometryConstants geoConstants;
 
 	trans = DirectX::XMMatrixTranslationFromVector(m_position.m_simd);
 	scale = DirectX::XMMatrixScaling(m_scale, m_scale, m_scale);
+	mv = scale * trans * camera->GetViewMatrix();
 	// Compute the model-view-projection matrix.
-	DirectX::XMStoreFloat4x4(&mvp, DirectX::XMMatrixTranspose(scale * trans * camera->GetViewMatrix() * camera->GetProjectionMatrix()));
+	DirectX::XMStoreFloat4x4(&geoConstants.mWorldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
+	DirectX::XMStoreFloat4x4(&geoConstants.mWorldView, DirectX::XMMatrixTranspose(mv));
 
 	// Copy this matrix into the appropriate location in the geo constant buffer.
-	memcpy(&m_d3dRes.m_pGeoConstants[m_world->GetFrameIndex()], &mvp, sizeof(mvp));
+	memcpy(m_d3dRes.m_pGeoConstants + m_d3dRes.m_GeoConstantBufferSize * m_world->GetFrameIndex(), &geoConstants, sizeof(GeometryConstants));
 
 	// copy material data into the appropriate location in the mtl constant buffer
 	memcpy(m_d3dRes.m_pMtlConstants + m_d3dRes.m_MtlConstantBufferSize * m_world->GetFrameIndex(), m_material->GetDataPtr(), m_material->GetDataSize());

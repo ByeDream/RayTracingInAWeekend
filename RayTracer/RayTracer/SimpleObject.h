@@ -11,13 +11,13 @@ class World;
 
 struct GeometryConstants
 {
-	XMFLOAT4X4 mvp;		// Model-view-projection (MVP) matrix.
-	FLOAT padding[48];
+	XMFLOAT4X4 mWorldViewProj;		// Model-view-projection (MVP) matrix.
+	XMFLOAT4X4 mWorldView;			// Model-view (MV) matrix.
 };
 
 struct ObjectD3D12Resources
 {
-	GeometryConstants *				m_pGeoConstants;
+	UINT8 *							m_pGeoConstants;
 	ComPtr<ID3D12Resource>			m_GeoConstantBuffer;
 	UINT32							m_GeoConstantBufferSize;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE *	m_GeoCbvHandles;

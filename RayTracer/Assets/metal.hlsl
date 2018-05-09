@@ -1,7 +1,10 @@
 struct PSInput
 {
-	float4 position : SV_POSITION;
-	float2 uv : TEXCOORD;
+	float4 position		: SV_POSITION;
+	float3 normalV		: TEXCOORD0;
+	float4 tangentV		: TEXCOORD1;
+	float3 positionV	: TEXCOORD2;
+	float2 uv			: TEXCOORD3;
 };
 
 cbuffer PSCBuffer : register(b1)

@@ -478,7 +478,9 @@ void D3D12Viewer::BeginBackSurface(BOOL clear)
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
 		m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
-		const float clearColor[] = { World::SkyLight.r(), World::SkyLight.g(), World::SkyLight.b(), 1.0f };
+		float t = 0.5;
+		Vec3 col = (1.0f - t) * Vec3(1.0f, 1.0f, 1.0f) + t * World::SkyLight;
+		const float clearColor[] = { col.r(), col.g(), col.b(), 1.0f };
 		m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 		m_commandList->ClearDepthStencilView(m_dsvHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	}
