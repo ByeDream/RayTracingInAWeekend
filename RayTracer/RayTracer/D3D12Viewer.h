@@ -58,6 +58,11 @@ public:
 		BOOL depthTest, BOOL depthWrite
 	);
 
+	BOOL										CreateAndUnloadBuffer(
+		ComPtr<ID3D12Resource> &out_bufferHeap,
+		ComPtr<ID3D12Resource> &out_uploadHeap,
+		const void *initData, UINT32 bufferSize
+	);
 private:
 	void										LoadPipeline();
 	void										LoadAssets();
@@ -91,29 +96,14 @@ private:
 	ComPtr<ID3D12Resource>						m_renderTargets[FrameCount];
 	ComPtr<ID3D12Resource>						m_depthStencil;
 	ComPtr<ID3D12CommandAllocator>				m_commandAllocators[FrameCount];
-	ComPtr<ID3D12RootSignature>					m_rootSignature;
-	ComPtr<ID3D12PipelineState>					m_pipelineState;
 	ComPtr<ID3D12GraphicsCommandList>			m_commandList;
 	ComPtr<ID3D12DescriptorHeap>				m_rtvHeap;
 	ComPtr<ID3D12DescriptorHeap>				m_dsvHeap;
 	UINT32										m_rtvDescriptorSize{ 0 };
-	ComPtr<ID3D12DescriptorHeap>				m_srvHeap;
-	ComPtr<ID3D12Resource>						m_texture;
-	ComPtr<ID3D12Resource>						m_textureUploadHeap;
-	UINT64										m_uploadBufferSize{ 0 };
 
 	HANDLE										m_fenceEvent;
 	ComPtr<ID3D12Fence>							m_fence;
 	UINT64										m_fenceValues[FrameCount];
 
 	D3D12_FEATURE_DATA_ROOT_SIGNATURE			m_RSFeatureData{};
-
-	// vertexs.. TODO remove
-	struct Vertex
-	{
-		XMFLOAT3 position;
-		XMFLOAT2 uv;
-	};
-	D3D12_VERTEX_BUFFER_VIEW					m_vertexBufferView;
-	ComPtr<ID3D12Resource>						m_vertexBuffer;
 };

@@ -20,39 +20,16 @@ void Mesh::BuildD3DRes(D3D12Viewer *viewer)
 
 	viewer->ResetCommandList();
 
-	// make sure the GPU finish the upload before leave the scope.
+	// Note: ComPtr's are CPU objects but this resource needs to stay in scope until
+	// the command list that references it has finished executing on the GPU.
+	// We will flush the GPU at the end of this method to ensure the resource is not
+	// prematurely destroyed.
 	ComPtr<ID3D12Resource> vertexBufferUploadHeap;
 	ComPtr<ID3D12Resource> indexBufferUploadHeap;
 
 	// Create the vertex buffer.
 	{
-		ThrowIfFailed(device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(m_vertexBufferSize),
-			D3D12_RESOURCE_STATE_COPY_DEST,
-			nullptr,
-			IID_PPV_ARGS(&m_d3dRes.m_vertexBufferHeap)));
-
-		NAME_D3D12_OBJECT(m_d3dRes.m_vertexBufferHeap);
-
-		ThrowIfFailed(device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(m_vertexBufferSize),
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&vertexBufferUploadHeap)));
-
-		// Copy data to the intermediate upload heap and then schedule a copy 
-		// from the upload heap to the vertex buffer.
-		D3D12_SUBRESOURCE_DATA vertexData = {};
-		vertexData.pData = m_vertexBuffer;
-		vertexData.RowPitch = m_vertexBufferSize;
-		vertexData.SlicePitch = vertexData.RowPitch;
-
-		UpdateSubresources<1>(commandList, m_d3dRes.m_vertexBufferHeap.Get(), vertexBufferUploadHeap.Get(), 0, 0, 1, &vertexData);
-		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_d3dRes.m_vertexBufferHeap.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+		viewer->CreateAndUnloadBuffer(m_d3dRes.m_vertexBufferHeap, vertexBufferUploadHeap, m_vertexBuffer, m_vertexBufferSize);
 
 		// Initialize the vertex buffer view.
 		m_d3dRes.m_vertexBufferView.BufferLocation = m_d3dRes.m_vertexBufferHeap->GetGPUVirtualAddress();
@@ -63,34 +40,8 @@ void Mesh::BuildD3DRes(D3D12Viewer *viewer)
 
 	// Create the index buffer.
 	{
-		ThrowIfFailed(device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(m_indexBufferSize),
-			D3D12_RESOURCE_STATE_COPY_DEST,
-			nullptr,
-			IID_PPV_ARGS(&m_d3dRes.m_indexBufferHeap)));
-
-		NAME_D3D12_OBJECT(m_d3dRes.m_indexBufferHeap);
-
-		ThrowIfFailed(device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(m_indexBufferSize),
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&indexBufferUploadHeap)));
-
-		// Copy data to the intermediate upload heap and then schedule a copy 
-		// from the upload heap to the index buffer.
-		D3D12_SUBRESOURCE_DATA indexData = {};
-		indexData.pData = m_indexBuffer;
-		indexData.RowPitch = m_indexBufferSize;
-		indexData.SlicePitch = indexData.RowPitch;
-
-		UpdateSubresources<1>(commandList, m_d3dRes.m_indexBufferHeap.Get(), indexBufferUploadHeap.Get(), 0, 0, 1, &indexData);
-		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_d3dRes.m_indexBufferHeap.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER));
-
+		viewer->CreateAndUnloadBuffer(m_d3dRes.m_indexBufferHeap, indexBufferUploadHeap, m_indexBuffer, m_indexBufferSize);
+		
 		// Describe the index buffer view.
 		m_d3dRes.m_indexBufferView.BufferLocation = m_d3dRes.m_indexBufferHeap->GetGPUVirtualAddress();
 		m_d3dRes.m_indexBufferView.Format = (m_indexType == kIndexSize16) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;

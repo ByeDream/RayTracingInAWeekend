@@ -187,7 +187,7 @@ void World::BuildD3DRes(D3D12Viewer *viewer)
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(viewer->GetDevice()->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_CbvHeap)));
-	NAME_D3D12_OBJECT(m_CbvHeap);
+	m_CbvHeap->SetName(L"WorldCbvHeap");
 	m_CurrentCbvIndex = 0;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE cbvCPUHandle(m_CbvHeap->GetCPUDescriptorHandleForHeapStart());
 	CD3DX12_GPU_DESCRIPTOR_HANDLE cbvGPUHandle(m_CbvHeap->GetGPUDescriptorHandleForHeapStart());

@@ -77,6 +77,7 @@ void SimpleSphereObject::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&m_d3dRes.m_GeoConstantBuffer)));
+		m_d3dRes.m_GeoConstantBuffer->SetName(L"ObjGeoConstantBuffer");
 
 		// Map the constant buffers. Note that unlike D3D11, the resource 
 		// does not need to be unmapped for use by the GPU. In this sample, 
@@ -114,6 +115,7 @@ void SimpleSphereObject::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&m_d3dRes.m_MtlConstantBuffer)));
+		m_d3dRes.m_MtlConstantBuffer->SetName(L"ObjMtlConstantBuffer");
 
 		CD3DX12_RANGE readRange(0, 0);		// We do not intend to read from this resource on the CPU.
 		ThrowIfFailed(m_d3dRes.m_MtlConstantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_d3dRes.m_pMtlConstants)));
