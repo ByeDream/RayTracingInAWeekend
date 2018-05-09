@@ -6,8 +6,9 @@
 #include "D3D12Helper.h"
 #include "SimpleCamera.h"
 #include "Materials.h"
+#include "World.h"
 
-SimpleSphereObject::SimpleSphereObject(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material)
+SimpleSphereObject::SimpleSphereObject(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world)
 {
 	m_position = center;
 	m_scale = radius;
@@ -16,6 +17,7 @@ SimpleSphereObject::SimpleSphereObject(const Vec3 &center, float radius, Mesh *m
 	SphereHitable *hitable = new SphereHitable(center, radius);
 	hitable->BindMaterial(material);
 	m_hitable = hitable;
+	m_world = world;
 }
 
 SimpleSphereObject::~SimpleSphereObject()
@@ -29,8 +31,6 @@ SimpleSphereObject::~SimpleSphereObject()
 
 void SimpleSphereObject::Update(SimpleCamera *camera, float elapsedSeconds)
 {
-	m_d3dRes.m_CurrentCbvIndex = (m_d3dRes.m_CurrentCbvIndex + 1) % D3D12Viewer::FrameCount;
-
 	XMMATRIX scale;
 	XMMATRIX trans;
 	XMFLOAT4X4 mvp;
@@ -41,21 +41,18 @@ void SimpleSphereObject::Update(SimpleCamera *camera, float elapsedSeconds)
 	DirectX::XMStoreFloat4x4(&mvp, DirectX::XMMatrixTranspose(scale * trans * camera->GetViewMatrix() * camera->GetProjectionMatrix()));
 
 	// Copy this matrix into the appropriate location in the geo constant buffer.
-	memcpy(&m_d3dRes.m_pGeoConstants[m_d3dRes.m_CurrentCbvIndex], &mvp, sizeof(mvp));
+	memcpy(&m_d3dRes.m_pGeoConstants[m_world->GetFrameIndex()], &mvp, sizeof(mvp));
 
 	// copy material data into the appropriate location in the mtl constant buffer
-	memcpy(m_d3dRes.m_pMtlConstants + m_d3dRes.m_MtlConstantBufferSize * m_d3dRes.m_CurrentCbvIndex, m_material->GetDataPtr(), m_material->GetDataSize());
+	memcpy(m_d3dRes.m_pMtlConstants + m_d3dRes.m_MtlConstantBufferSize * m_world->GetFrameIndex(), m_material->GetDataPtr(), m_material->GetDataSize());
 }
 
 void SimpleSphereObject::Render(D3D12Viewer *viewer) const
 {
 	ID3D12GraphicsCommandList *commandList = viewer->GetGraphicsCommandList();
 
-	ID3D12DescriptorHeap* ppHeaps[] = { m_d3dRes.m_CbvHeap.Get() };
-	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-
-	commandList->SetGraphicsRootDescriptorTable(0, m_d3dRes.m_GeoCbvHandles[m_d3dRes.m_CurrentCbvIndex]);
-	commandList->SetGraphicsRootDescriptorTable(1, m_d3dRes.m_MtlCbvHandles[m_d3dRes.m_CurrentCbvIndex]);
+	commandList->SetGraphicsRootDescriptorTable(0, m_d3dRes.m_GeoCbvHandles[m_world->GetFrameIndex()]);
+	commandList->SetGraphicsRootDescriptorTable(1, m_d3dRes.m_MtlCbvHandles[m_world->GetFrameIndex()]);
 
 	commandList->IASetPrimitiveTopology(ConvertPrimitiveType(m_mesh->m_primitiveType));
 	commandList->IASetIndexBuffer(&m_mesh->m_d3dRes.m_indexBufferView);
@@ -63,19 +60,10 @@ void SimpleSphereObject::Render(D3D12Viewer *viewer) const
 	commandList->DrawIndexedInstanced(m_mesh->m_indexCount, 1, 0, 0, 0);
 }
 
-void SimpleSphereObject::BuildD3DRes(D3D12Viewer *viewer)
+void SimpleSphereObject::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle)
 {
 	ID3D12Device *device = viewer->GetDevice();
-	// the CBV heap, // TODO move to world and share to objects and general buffers
-	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
-	cbvHeapDesc.NumDescriptors = D3D12Viewer::FrameCount * 2;  // FrameCount * geo + FrameCount *mtl
-	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	ThrowIfFailed(device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_d3dRes.m_CbvHeap)));
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE cbvCPUHandle(m_d3dRes.m_CbvHeap->GetCPUDescriptorHandleForHeapStart());
 	UINT32 handleOffset = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	m_d3dRes.m_CurrentCbvIndex = 0;
 
 	// geo constant buffers.
 	{
@@ -108,7 +96,8 @@ void SimpleSphereObject::BuildD3DRes(D3D12Viewer *viewer)
 			cbvDesc.SizeInBytes = m_d3dRes.m_GeoConstantBufferSize;
 			cbOffset += m_d3dRes.m_GeoConstantBufferSize;
 			device->CreateConstantBufferView(&cbvDesc, cbvCPUHandle);
-			m_d3dRes.m_GeoCbvHandles[n].InitOffsetted(m_d3dRes.m_CbvHeap->GetGPUDescriptorHandleForHeapStart(), n, handleOffset);
+			m_d3dRes.m_GeoCbvHandles[n] = cbvGPUHandle;
+			cbvGPUHandle.Offset(handleOffset);
 			cbvCPUHandle.Offset(handleOffset);
 		}
 	}
@@ -140,7 +129,8 @@ void SimpleSphereObject::BuildD3DRes(D3D12Viewer *viewer)
 			cbvDesc.SizeInBytes = m_d3dRes.m_MtlConstantBufferSize;
 			cbOffset += m_d3dRes.m_MtlConstantBufferSize;
 			device->CreateConstantBufferView(&cbvDesc, cbvCPUHandle);
-			m_d3dRes.m_MtlCbvHandles[n].InitOffsetted(m_d3dRes.m_CbvHeap->GetGPUDescriptorHandleForHeapStart(), n + D3D12Viewer::FrameCount, handleOffset);
+			m_d3dRes.m_MtlCbvHandles[n] = cbvGPUHandle;
+			cbvGPUHandle.Offset(handleOffset);
 			cbvCPUHandle.Offset(handleOffset);
 		}
 	}	

@@ -7,6 +7,7 @@ class IHitable;
 class IMaterial;
 class D3D12Viewer;
 class SimpleCamera;
+class World;
 
 struct GeometryConstants
 {
@@ -26,10 +27,6 @@ struct ObjectD3D12Resources
 	UINT32							m_MtlConstantBufferSize;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE *	m_MtlCbvHandles;
 
-
-	ComPtr<ID3D12DescriptorHeap>	m_CbvHeap;
-	UINT32							m_CurrentCbvIndex;
-
 	~ObjectD3D12Resources() 
 	{
 		delete[] m_GeoCbvHandles; 
@@ -41,6 +38,8 @@ class Object
 {
 public:
 	virtual ~Object() = default;
+	World *						m_world;
+
 	Vec3						m_position;
 	float						m_scale;
 	// TODO for rotation
@@ -53,7 +52,7 @@ public:
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) = 0;
 	virtual void				Render(D3D12Viewer *viewer) const = 0;
-	virtual void				BuildD3DRes(D3D12Viewer *viewer) = 0;
+	virtual void				BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle) = 0;
 };
 
 
@@ -62,12 +61,12 @@ public:
 class SimpleSphereObject : public Object
 {
 public:
-	SimpleSphereObject(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material);
+	SimpleSphereObject(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world);
 	virtual ~SimpleSphereObject() override;
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
 	virtual void				Render(D3D12Viewer *viewer) const override;
-	virtual void				BuildD3DRes(D3D12Viewer *viewer) override;
+	virtual void				BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle) override;
 };
 
 // TODO more

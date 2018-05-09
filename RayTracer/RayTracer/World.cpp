@@ -7,6 +7,7 @@
 #include "Hitables.h"
 #include "Randomizer.h"
 #include "D3D12Viewer.h"
+#include "D3D12Helper.h"
 
 using namespace std;
 
@@ -20,12 +21,12 @@ void World::ConstructWorld()
 	LoadMaterials();
 
 	// ground
-	m_lambertianObjects.push_back(new SimpleSphereObject(Vec3(0.0f, -1000.0f, -0.0f), 1000.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_GROUND]));
+	m_lambertianObjects.push_back(new SimpleSphereObject(Vec3(0.0f, -1000.0f, -0.0f), 1000.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_GROUND], this));
 
 	// bigger spheres
-	m_lambertianObjects.push_back(new SimpleSphereObject(Vec3(-4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_LAMBERTIAN]));
-	m_dielectricObjects.push_back(new SimpleSphereObject(Vec3(0.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_DIELECTRIC]));
-	m_metalObjects.push_back(new SimpleSphereObject(Vec3(4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_METAL]));
+	m_lambertianObjects.push_back(new SimpleSphereObject(Vec3(-4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_LAMBERTIAN], this));
+	m_dielectricObjects.push_back(new SimpleSphereObject(Vec3(0.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_DIELECTRIC], this));
+	m_metalObjects.push_back(new SimpleSphereObject(Vec3(4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_METAL], this));
 
 	// random smaller spheres
 #if 1
@@ -52,18 +53,27 @@ void World::ConstructWorld()
 					objectPool = &m_metalObjects;
 				}
 				
-				objectPool->push_back(new SimpleSphereObject(center, 0.2f, m_meshes[MESH_ID_LOW_POLYGON_SPHERE], m_materials[materialID]));
+				objectPool->push_back(new SimpleSphereObject(center, 0.2f, m_meshes[MESH_ID_LOW_POLYGON_SPHERE], m_materials[materialID], this));
 			}
 		}
 	}
 #endif
 
 	for (auto i = m_lambertianObjects.begin(); i != m_lambertianObjects.end(); i++)
+	{
 		m_objects.push_back(*i);
+		m_objectsCount++;
+	}
 	for (auto i = m_metalObjects.begin(); i != m_metalObjects.end(); i++)
+	{
 		m_objects.push_back(*i);
+		m_objectsCount++;
+	}
 	for (auto i = m_dielectricObjects.begin(); i != m_dielectricObjects.end(); i++)
+	{
 		m_objects.push_back(*i);
+		m_objectsCount++;
+	}
 }
 
 
@@ -114,6 +124,8 @@ void World::DeconstructWorld()
 
 void World::OnUpdate(SimpleCamera *camera, float elapsedSeconds)
 {
+	m_CurrentCbvIndex = (m_CurrentCbvIndex + 1) % D3D12Viewer::FrameCount;
+
 	for (auto i = m_objects.begin(); i != m_objects.end(); i++)
 	{
 		(*i)->Update(camera, elapsedSeconds);
@@ -126,6 +138,10 @@ void World::OnRender(D3D12Viewer *viewer) const
 
 	commandList->SetPipelineState(m_lambertianPipelineState->m_PSO.Get());
 	commandList->SetGraphicsRootSignature(m_lambertianPipelineState->m_RS.Get());
+
+	ID3D12DescriptorHeap* ppHeaps[] = { m_CbvHeap.Get() };
+	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+	
 	for (auto i = m_lambertianObjects.begin(); i != m_lambertianObjects.end(); i++)
 	{
 		(*i)->Render(viewer);
@@ -165,6 +181,17 @@ BOOL World::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) cons
 
 void World::BuildD3DRes(D3D12Viewer *viewer)
 {
+	// create CBV heap
+	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
+	cbvHeapDesc.NumDescriptors = D3D12Viewer::FrameCount * 2 * m_objectsCount;  //big enough for use, FrameCount * geo + FrameCount *mtl per objects
+	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	ThrowIfFailed(viewer->GetDevice()->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_CbvHeap)));
+	NAME_D3D12_OBJECT(m_CbvHeap);
+	m_CurrentCbvIndex = 0;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE cbvCPUHandle(m_CbvHeap->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_GPU_DESCRIPTOR_HANDLE cbvGPUHandle(m_CbvHeap->GetGPUDescriptorHandleForHeapStart());
+
 	for (auto i = m_meshes.begin(); i != m_meshes.end(); i++)
 	{
 		(*i)->BuildD3DRes(viewer);
@@ -172,8 +199,10 @@ void World::BuildD3DRes(D3D12Viewer *viewer)
 
 	for (auto i = m_objects.begin(); i != m_objects.end(); i++)
 	{
-		(*i)->BuildD3DRes(viewer);
+		(*i)->BuildD3DRes(viewer, cbvCPUHandle, cbvGPUHandle);
 	}
+
+	
 
 	// create pso
 	CD3DX12_DESCRIPTOR_RANGE1 ranges[2];

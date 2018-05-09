@@ -49,6 +49,7 @@ public:
 
 	void									BuildD3DRes(D3D12Viewer *viewer);
 
+	inline UINT32							GetFrameIndex() const { return m_CurrentCbvIndex; }
 	static const Vec3						SkyLight;
 private:
 	void									LoadMeshes();
@@ -66,4 +67,8 @@ private:
 	PipelineState *							m_dielectricPipelineState{ nullptr };
 
 	std::vector<Object *>					m_objects; // for ray tracing, don't really care about sorting
+	UINT32									m_objectsCount{ 0 };
+
+	ComPtr<ID3D12DescriptorHeap>			m_CbvHeap;
+	UINT32									m_CurrentCbvIndex;
 };
