@@ -23,9 +23,9 @@ void World::ConstructWorld()
 	m_lambertianObjects.push_back(new SimpleSphereObject(Vec3(0.0f, -1000.0f, -0.0f), 1000.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_GROUND]));
 
 	// bigger spheres
-	m_lambertianObjects.push_back(new SimpleSphereObject(Vec3(-4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_LAMBERTIAN]));
-	m_dielectricObjects.push_back(new SimpleSphereObject(Vec3(0.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_DIELECTRIC]));
-	m_metalObjects.push_back(new SimpleSphereObject(Vec3(4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_METAL]));
+	m_lambertianObjects.push_back(new SimpleSphereObject(Vec3(-4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_LAMBERTIAN]));
+	m_dielectricObjects.push_back(new SimpleSphereObject(Vec3(0.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_DIELECTRIC]));
+	m_metalObjects.push_back(new SimpleSphereObject(Vec3(4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_METAL]));
 
 	// random smaller spheres
 #if 1
@@ -189,19 +189,24 @@ void World::BuildD3DRes(D3D12Viewer *viewer)
 
 	D3D12_INPUT_LAYOUT_DESC inputLayout{ SimpleMesh::D3DVertexDeclaration, SimpleMesh::D3DVertexDeclarationElementCount };
 
-	m_lambertianPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\lambertian.hlsl", inputLayout, TRUE, TRUE);
+	m_lambertianPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\lambertian.hlsl", inputLayout, TRUE, TRUE, TRUE);
 
-	m_metalPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\metal.hlsl", inputLayout, TRUE, TRUE);
+	m_metalPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\metal.hlsl", inputLayout, TRUE, TRUE, TRUE);
 
-	m_dielectricPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\dielectric.hlsl", inputLayout, TRUE, TRUE);
+	m_dielectricPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\dielectric.hlsl", inputLayout, TRUE, TRUE, TRUE);
 }
 
 void World::LoadMeshes()
 {
 	// MESH_ID_HIGH_POLYGON_SPHERE
 	SimpleMesh *highPolygonSphere = new SimpleMesh();
-	SimpeMeshBuilder::BuildSphereMesh(highPolygonSphere, 1.0f, 40, 40);
+	SimpeMeshBuilder::BuildSphereMesh(highPolygonSphere, 1.0f, 40, 200);
 	m_meshes.push_back(highPolygonSphere);
+
+	// MESH_ID_MEDIUM_POLYGON_SPHERE
+	SimpleMesh *mediumPolygonSphere = new SimpleMesh();
+	SimpeMeshBuilder::BuildSphereMesh(mediumPolygonSphere, 1.0f, 40, 40);
+	m_meshes.push_back(mediumPolygonSphere);
 
 	// MESH_ID_LOW_POLYGON_SPHERE
 	SimpleMesh *lowPolygonSphere = new SimpleMesh();

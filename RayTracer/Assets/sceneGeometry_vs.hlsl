@@ -12,7 +12,7 @@ struct PSInput
 	float2 uv : TEXCOORD;
 };
 
-cbuffer VSCBuffer : register(b0)
+cbuffer GeometryConstants : register(b0)
 {
 	float4x4 g_mWorldViewProj;
 };

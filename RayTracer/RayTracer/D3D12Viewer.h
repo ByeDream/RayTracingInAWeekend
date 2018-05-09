@@ -54,7 +54,7 @@ public:
 	PipelineState *								CreatePipelineState(
 		const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &RSDesc, 
 		LPCWSTR VSFile, LPCWSTR PSFile, 
-		const D3D12_INPUT_LAYOUT_DESC &inputLayout,
+		const D3D12_INPUT_LAYOUT_DESC &inputLayout, BOOL ccw,
 		BOOL depthTest, BOOL depthWrite
 	);
 

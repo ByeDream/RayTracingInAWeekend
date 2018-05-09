@@ -8,7 +8,7 @@ class IMaterial;
 class D3D12Viewer;
 class SimpleCamera;
 
-struct VSConstants
+struct GeometryConstants
 {
 	XMFLOAT4X4 mvp;		// Model-view-projection (MVP) matrix.
 	FLOAT padding[48];
@@ -16,10 +16,25 @@ struct VSConstants
 
 struct ObjectD3D12Resources
 {
-	VSConstants *					m_pVSConstants;
-	ComPtr<ID3D12Resource>			m_VSConstantBuffer;
-	ComPtr<ID3D12DescriptorHeap>	m_VSCbvHeap;
-	UINT32							m_VSCurrentCbvIndex;
+	GeometryConstants *				m_pGeoConstants;
+	ComPtr<ID3D12Resource>			m_GeoConstantBuffer;
+	UINT32							m_GeoConstantBufferSize;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE *	m_GeoCbvHandles;
+
+	UINT8 *							m_pMtlConstants;
+	ComPtr<ID3D12Resource>			m_MtlConstantBuffer;
+	UINT32							m_MtlConstantBufferSize;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE *	m_MtlCbvHandles;
+
+
+	ComPtr<ID3D12DescriptorHeap>	m_CbvHeap;
+	UINT32							m_CurrentCbvIndex;
+
+	~ObjectD3D12Resources() 
+	{
+		delete[] m_GeoCbvHandles; 
+		delete[] m_MtlCbvHandles;
+	}
 };
 
 class Object

@@ -10,6 +10,7 @@ class IMaterial
 public:
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const = 0;
 	virtual size_t GetDataSize() const = 0;
+	virtual const void * GetDataPtr() const = 0;
 };
 
 class Lambertian : public IMaterial
@@ -24,6 +25,7 @@ public:
 	Lambertian(const Vec3 &albedo);
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const override;
 	virtual size_t GetDataSize() const override { return sizeof(Lambertian::Data); }
+	virtual const void * GetDataPtr() const override { return &m_data; }
 };
 
 class Metal : public IMaterial
@@ -41,6 +43,7 @@ public:
 	
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const override;
 	virtual size_t GetDataSize() const override { return sizeof(Metal::Data); }
+	virtual const void * GetDataPtr() const override { return &m_data; }
 };
 
 class Dielectric : public IMaterial
@@ -55,4 +58,5 @@ public:
 	Dielectric(float refractiveIndex); 
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const override;
 	virtual size_t GetDataSize() const override { return sizeof(Metal::Data); }
+	virtual const void * GetDataPtr() const override { return &m_data; }
 };

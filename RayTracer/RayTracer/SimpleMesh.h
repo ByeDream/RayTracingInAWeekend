@@ -81,6 +81,6 @@ public:
 		if (m_vertexBuffer)
 			delete m_vertexBuffer;
 		if (m_indexBuffer)
-			delete m_vertexBuffer;
+			delete m_indexBuffer;
 	}
 };
