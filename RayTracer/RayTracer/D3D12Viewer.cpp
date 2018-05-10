@@ -334,8 +334,8 @@ PipelineState * D3D12Viewer::CreatePipelineState(const CD3DX12_VERSIONED_ROOT_SI
 	UINT compileFlags = 0;
 #endif
 
-	ThrowIfFailed(D3DCompileFromFile(VSFile, nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
-	ThrowIfFailed(D3DCompileFromFile(PSFile, nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
+	ThrowIfFailed(D3DCompileFromFile(VSFile, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
+	ThrowIfFailed(D3DCompileFromFile(PSFile, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
 
 		
 	// Describe and create the graphics pipeline state object (PSO).
@@ -478,9 +478,8 @@ void D3D12Viewer::BeginBackSurface(BOOL clear)
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
 		m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
-		float t = 0.5;
-		Vec3 col = (1.0f - t) * Vec3(1.0f, 1.0f, 1.0f) + t * World::SkyLight;
-		const float clearColor[] = { col.r(), col.g(), col.b(), 1.0f };
+		Vec3 ambient = (1.0f - World::SkyLightBlender) * Vec3(1.0f, 1.0f, 1.0f) + World::SkyLightBlender * World::SkyLight;
+		const float clearColor[] = { ambient.r(), ambient.g(), ambient.b(), 1.0f };
 		m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 		m_commandList->ClearDepthStencilView(m_dsvHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	}

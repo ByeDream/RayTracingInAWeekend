@@ -56,6 +56,7 @@ void SimpleSphereObject::Render(D3D12Viewer *viewer) const
 
 	commandList->SetGraphicsRootDescriptorTable(0, m_d3dRes.m_GeoCbvHandles[m_world->GetFrameIndex()]);
 	commandList->SetGraphicsRootDescriptorTable(1, m_d3dRes.m_MtlCbvHandles[m_world->GetFrameIndex()]);
+	commandList->SetGraphicsRootDescriptorTable(2, m_world->GetIllumCbvHandle(m_world->GetFrameIndex()));
 
 	commandList->IASetPrimitiveTopology(ConvertPrimitiveType(m_mesh->m_primitiveType));
 	commandList->IASetIndexBuffer(&m_mesh->m_d3dRes.m_indexBufferView);

@@ -51,6 +51,7 @@ public:
 
 	inline UINT32							GetFrameIndex() const { return m_CurrentCbvIndex; }
 	static const Vec3						SkyLight;
+	static const float						SkyLightBlender;
 private:
 	void									LoadMeshes();
 	void									LoadMaterials();
@@ -71,4 +72,24 @@ private:
 
 	ComPtr<ID3D12DescriptorHeap>			m_CbvHeap;
 	UINT32									m_CurrentCbvIndex;
+
+	////////////////////////
+	// TODO Light, put them here at the moment
+	// Only one direction light
+	struct IllumConstants
+	{
+		XMFLOAT4	lightDirV;				// Light direction in view space.
+		XMFLOAT4	lightIntensity;
+		XMFLOAT4	ambientIntensity;
+	};
+
+	UINT8 *									m_pIllumConstants;
+	ComPtr<ID3D12Resource>					m_IllumConstantBuffer;
+	UINT32									m_IllumConstantBufferSize;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE *			m_IllumCbvHandles;
+public:
+	D3D12_GPU_DESCRIPTOR_HANDLE				GetIllumCbvHandle(UINT32 index) {
+		return m_IllumCbvHandles[index];
+	}
+	////////////////////////
 };

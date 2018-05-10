@@ -127,11 +127,10 @@ void HomemadeRayTracer::Render(const SimpleCamera *camera, OutputImage *image)
 					col += Sample(r, 0);
 				}
 				col /= float(SAMPLE_COUNT);
-
-				// the gamma correction, to the approximation, use the power 1/gamma, and the gamma == 2, which is just square-root.
-				col = Vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
 			}
-			
+
+			// the gamma correction, to the approximation, use the power 1/gamma, and the gamma == 2, which is just square-root.
+			col = Vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
 		}
 
 #if defined(SHOW_PROGRESS)
