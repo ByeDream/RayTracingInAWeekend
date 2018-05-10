@@ -107,4 +107,6 @@ private:
 	UINT64										m_fenceValues[FrameCount];
 
 	D3D12_FEATURE_DATA_ROOT_SIGNATURE			m_RSFeatureData{};
+
+	UINT32										m_MsaaQuality;
 };

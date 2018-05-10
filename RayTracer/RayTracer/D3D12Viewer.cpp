@@ -6,6 +6,8 @@
 #include "World.h"
 #include "D3D12Helper.h"
 
+#define MSAA_SAMPLE_COUNT 1 // disable mass at the moment, cos DX12 doesn't support direly use MSAA on back buffer, need a off-screen mass pass later. 
+
 using namespace std;
 
 D3D12Viewer::D3D12Viewer(HWND hwnd, OutputImage *outputImage, InputListener *inputListener, HomemadeRayTracer *HMRayTracer, World *world)
@@ -162,6 +164,19 @@ void D3D12Viewer::LoadPipeline()
 	ThrowIfFailed(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
 	NAME_D3D12_OBJECT(m_commandQueue);
 
+	// check MSAA support
+	{
+		D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels;
+		msQualityLevels.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		msQualityLevels.SampleCount = MSAA_SAMPLE_COUNT;
+		msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+		msQualityLevels.NumQualityLevels = 0;
+
+		ThrowIfFailed(m_device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
+		m_MsaaQuality = msQualityLevels.NumQualityLevels;
+		assert(m_MsaaQuality > 0 && "Unexpected MSAA quality level.");
+	}
+
 	// Describe and create the swap chain.
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 	swapChainDesc.BufferCount = FrameCount;
@@ -170,7 +185,8 @@ void D3D12Viewer::LoadPipeline()
 	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	swapChainDesc.SampleDesc.Count = 1;
+	swapChainDesc.SampleDesc.Count = MSAA_SAMPLE_COUNT;
+	swapChainDesc.SampleDesc.Quality = m_MsaaQuality - 1;
 
 	ComPtr<IDXGISwapChain1> swapChain;
 	ThrowIfFailed(factory->CreateSwapChainForHwnd(
@@ -255,7 +271,7 @@ void D3D12Viewer::LoadAssets()
 		ThrowIfFailed(m_device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_width, m_height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+			&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_width, m_height, 1, 0, MSAA_SAMPLE_COUNT, m_MsaaQuality - 1, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
 			D3D12_RESOURCE_STATE_DEPTH_WRITE,
 			&depthOptimizedClearValue,
 			IID_PPV_ARGS(&m_depthStencil)
@@ -368,7 +384,8 @@ PipelineState * D3D12Viewer::CreatePipelineState(const CD3DX12_VERSIONED_ROOT_SI
 	psoDesc.NumRenderTargets = 1;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-	psoDesc.SampleDesc.Count = 1;
+	psoDesc.SampleDesc.Count = MSAA_SAMPLE_COUNT;
+	psoDesc.SampleDesc.Quality = m_MsaaQuality - 1;
 	ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso->m_PSO)));
 	pso->m_RS->SetName(L"GraphicsPipelineState");
 
