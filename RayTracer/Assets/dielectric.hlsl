@@ -25,7 +25,7 @@ float4 PSMain(PSInput input) : SV_TARGET
 {
 	float specPow = 3; // hardcode the specular power for simplified modeling 
 	float3 diff_c = float3(1.0f, 1.0f, 1.0f);
-
+	float alpha = clamp(abs(g_refractiveIndex - 1.0f) * 1.6f, 0.0f, 1.0f);
 						// to fix the value after iterpolation
 	const float3 vN = normalize(input.normalV);
 	const float3 vT = normalize(input.tangentV.xyz - dot(input.tangentV.xyz, vN) * vN);
@@ -39,5 +39,5 @@ float4 PSMain(PSInput input) : SV_TARGET
 	// the gamma correction, to the approximation, use the power 1/gamma, and the gamma == 2, which is just square-root.
 	vLightInts = sqrt(vLightInts);
 
-	return float4(vLightInts, 1.0f);
+	return float4(vLightInts, alpha);
 }

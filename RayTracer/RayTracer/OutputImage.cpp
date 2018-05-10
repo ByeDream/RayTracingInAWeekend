@@ -163,7 +163,7 @@ void OutputImage::BuildD3DRes(D3D12Viewer *viewer)
 		};
 		D3D12_INPUT_LAYOUT_DESC inputLayout{ inputElementDescs, _countof(inputElementDescs) };
 
-		m_resolvePipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\resloveImage.hlsl", L"..\\Assets\\resloveImage.hlsl", inputLayout, FALSE, FALSE, FALSE);
+		m_resolvePipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\resloveImage.hlsl", L"..\\Assets\\resloveImage.hlsl", inputLayout, FALSE, FALSE, FALSE, FALSE);
 	}
 
 	// Create the vertex buffer of resolving draw.
