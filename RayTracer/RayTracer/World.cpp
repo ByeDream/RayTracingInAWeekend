@@ -9,6 +9,7 @@
 #include "D3D12Viewer.h"
 #include "D3D12Helper.h"
 #include "SimpleCamera.h"
+#include "SimpleMotion.h"
 
 using namespace std;
 
@@ -24,12 +25,12 @@ void World::ConstructWorld()
 	LoadMaterials();
 
 	// ground
-	m_lambertianObjects.push_back(new SimpleSphereObject(Vec3(0.0f, -1000.0f, -0.0f), 1000.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_GROUND], this));
+	m_lambertianObjects.push_back(new SimpleObjectSphere(Vec3(0.0f, -1000.0f, -0.0f), 1000.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_GROUND], this));
 
 	// bigger spheres
-	m_lambertianObjects.push_back(new SimpleSphereObject(Vec3(-4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_LAMBERTIAN], this));
-	m_dielectricObjects.push_back(new SimpleSphereObject(Vec3(0.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_DIELECTRIC], this));
-	m_metalObjects.push_back(new SimpleSphereObject(Vec3(4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_METAL], this));
+	m_lambertianObjects.push_back(new SimpleObjectSphere(Vec3(-4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_LAMBERTIAN], this));
+	m_dielectricObjects.push_back(new SimpleObjectSphere(Vec3(0.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_DIELECTRIC], this));
+	m_metalObjects.push_back(new SimpleObjectSphere(Vec3(4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_METAL], this));
 
 	// random smaller spheres
 #if 1
@@ -56,7 +57,7 @@ void World::ConstructWorld()
 					objectPool = &m_metalObjects;
 				}
 				
-				objectPool->push_back(new SimpleSphereObject(center, 0.2f, m_meshes[MESH_ID_LOW_POLYGON_SPHERE], m_materials[materialID], this));
+				objectPool->push_back(new SimpleObjectSphere(center, 0.2f, m_meshes[MESH_ID_LOW_POLYGON_SPHERE], m_materials[materialID], this));
 			}
 		}
 	}

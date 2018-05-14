@@ -10,17 +10,7 @@
 
 using namespace std;
 
-SimpleCamera::SimpleCamera(
-	const Vec3 &lookFrom,
-	const Vec3 &lookAt,
-	float fov,
-	float aspectRatio,
-	float minZ,
-	float maxZ,
-	float aperture,
-	const World *world,
-	InputListener *inputListener
-)
+SimpleCamera::SimpleCamera(const Vec3 &lookFrom, const Vec3 &lookAt, float fov, float aspectRatio, float minZ, float maxZ, float aperture, float shutter, const World *world, InputListener *inputListener)
 	: m_initialOrigin(lookFrom)
 	, m_initialFocus(lookAt)
 	, m_vup(0.0f, 1.0f, 0.0f) // no roll
@@ -33,6 +23,7 @@ SimpleCamera::SimpleCamera(
 	, m_inputListener(inputListener)
 	, m_moveSpeed(0.0f)
 	, m_turnSpeed(0.0f)
+	, m_emittingDurationInMs(shutter)
 {
 	m_inputListener->RegisterKey('H');
 	m_inputListener->RegisterKey('W');
@@ -50,9 +41,10 @@ SimpleCamera::SimpleCamera(
 
 Ray SimpleCamera::GetRay(float u, float v) const
 {
+	float emittedTimeInMs = Randomizer::RandomUNorm() * m_emittingDurationInMs;
 	Vec3 rd = m_lensRadius * Randomizer::RandomInUnitDisk();
 	Vec3 offset = m_u * rd.x() + m_v * rd.y();
-	return Ray(m_origin + offset, m_viewTopLeftCorner + u * m_viewHorizontal + v * m_viewVertical - m_origin - offset);
+	return Ray(m_origin + offset, m_viewTopLeftCorner + u * m_viewHorizontal + v * m_viewVertical - m_origin - offset, emittedTimeInMs);
 }
 
 void SimpleCamera::OnUpdate(float elapsedSeconds)
@@ -129,6 +121,7 @@ void SimpleCamera::HelpInfo()
 	cout << "[Orientation] " << m_origin << " > " << m_focus <<endl;
 	cout << "[fov] " << m_fov << endl;
 	cout << "[aperture] " << m_lensRadius * 2.0f << endl;
+	cout << "[shutter] " << m_emittingDurationInMs << endl;
 	cout << "==========================================" << endl;
 }
 
@@ -198,7 +191,7 @@ XMMATRIX SimpleCamera::GetProjectionMatrix() const
 BOOL SimpleCamera::AutoFocus(const Vec3 &lookDir)
 {
 	HitRecord rec;
-	Ray r(m_origin, lookDir);
+	Ray r(m_origin, lookDir, 0.0f);
 	if (m_world->Hit(r, 0.01f, FLT_MAX, rec))
 	{
 		m_focus = rec.m_position;

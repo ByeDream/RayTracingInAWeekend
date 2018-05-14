@@ -19,7 +19,7 @@ public:
 	void						OnDestroy();
 	void						HelpInfo();
 
-	void						Render(const SimpleCamera *camera, OutputImage *image);
+	void						TraceRay(const SimpleCamera *camera, OutputImage *image);
 
 private:
 	Vec3						Sample(const Ray &r, UINT32 depth) const;
@@ -27,7 +27,7 @@ private:
 	InputListener *				m_inputListener{ nullptr };
 
 	BOOL						m_enableNormalDisplay{ FALSE };
-	BOOL						m_enableSingleRay{ FALSE };
+	BOOL						m_enable1SPP{ TRUE };
 
 	const World *				m_world{ nullptr };
 };

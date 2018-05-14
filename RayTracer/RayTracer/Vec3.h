@@ -100,3 +100,8 @@ inline Vec3 normalize(const Vec3 &v)
 {
 	return DirectX::XMVector3Normalize(v.m_simd);
 }
+
+inline Vec3 zero()
+{
+	return DirectX::XMVectorZero();
+}

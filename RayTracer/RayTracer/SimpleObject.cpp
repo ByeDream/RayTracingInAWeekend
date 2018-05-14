@@ -7,8 +7,9 @@
 #include "SimpleCamera.h"
 #include "Materials.h"
 #include "World.h"
+#include "SimpleMotion.h"
 
-SimpleSphereObject::SimpleSphereObject(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world)
+SimpleObjectSphere::SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world, IMotion *motion /*= nullptr*/)
 {
 	m_position = center;
 	m_scale = radius;
@@ -18,9 +19,11 @@ SimpleSphereObject::SimpleSphereObject(const Vec3 &center, float radius, Mesh *m
 	hitable->BindMaterial(material);
 	m_hitable = hitable;
 	m_world = world;
+	m_motion = motion;
+	hitable->BindMotion(motion);
 }
 
-SimpleSphereObject::~SimpleSphereObject()
+SimpleObjectSphere::~SimpleObjectSphere()
 {
 	if (m_hitable)
 	{
@@ -29,8 +32,16 @@ SimpleSphereObject::~SimpleSphereObject()
 	}
 }
 
-void SimpleSphereObject::Update(SimpleCamera *camera, float elapsedSeconds)
+void SimpleObjectSphere::Update(SimpleCamera *camera, float elapsedSeconds)
 {
+	// animate
+	m_hitable->OnUpdate(camera, elapsedSeconds);
+	if (m_motion)
+	{
+		m_position = m_motion->Move(m_position, elapsedSeconds);
+	}
+
+	// update constants
 	XMMATRIX scale;
 	XMMATRIX trans;
 	XMMATRIX mv;
@@ -50,7 +61,7 @@ void SimpleSphereObject::Update(SimpleCamera *camera, float elapsedSeconds)
 	memcpy(m_d3dRes.m_pMtlConstants + m_d3dRes.m_MtlConstantBufferSize * m_world->GetFrameIndex(), m_material->GetDataPtr(), m_material->GetDataSize());
 }
 
-void SimpleSphereObject::Render(D3D12Viewer *viewer) const
+void SimpleObjectSphere::Render(D3D12Viewer *viewer) const
 {
 	ID3D12GraphicsCommandList *commandList = viewer->GetGraphicsCommandList();
 
@@ -64,7 +75,7 @@ void SimpleSphereObject::Render(D3D12Viewer *viewer) const
 	commandList->DrawIndexedInstanced(m_mesh->m_indexCount, 1, 0, 0, 0);
 }
 
-void SimpleSphereObject::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle)
+void SimpleObjectSphere::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle)
 {
 	ID3D12Device *device = viewer->GetDevice();
 	UINT32 handleOffset = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);

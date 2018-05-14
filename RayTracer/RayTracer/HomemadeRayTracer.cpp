@@ -13,7 +13,7 @@
 using namespace std;
 
 #define SHOW_PROGRESS
-#define SAMPLE_COUNT 100
+#define SAMPLE_PER_PIXEL 100
 #define MAX_SAMPLE_DEPTH  50
 
 HomemadeRayTracer::HomemadeRayTracer(InputListener *inputListener, OutputImage *image, const World *world)
@@ -41,7 +41,7 @@ void HomemadeRayTracer::OnUpdate(const SimpleCamera *camera, OutputImage *image)
 {
 	if (m_inputListener->WhenReleaseKey(VK_SPACE))
 	{
-		Render(camera, image);
+		TraceRay(camera, image);
 	}
 
 	if (m_inputListener->WhenReleaseKey('H'))
@@ -58,9 +58,9 @@ void HomemadeRayTracer::OnUpdate(const SimpleCamera *camera, OutputImage *image)
 
 	if (m_inputListener->WhenReleaseKey('M'))
 	{
-		m_enableSingleRay = !m_enableSingleRay;
+		m_enable1SPP = !m_enable1SPP;
 
-		cout << "[HomemadeRayTracer][SingleRay] " << (m_enableSingleRay ? "Enabled" : "Disabled") << endl;
+		cout << "[HomemadeRayTracer][1SPP] " << (m_enable1SPP ? "Enabled" : "Disabled") << endl;
 	}
 }
 
@@ -76,19 +76,19 @@ void HomemadeRayTracer::HelpInfo()
 	cout << "  [h] Display this message." << endl;
 	cout << "  [space] Render result to output image and upload it to viewer." << endl;
 	cout << "  [n] Switch on/off normal display." << endl;
-	cout << "  [m] Switch on/off anti-aliasing." << endl;
+	cout << "  [m] Switch on/off 1-SPP." << endl;
 	cout << "[NormalDisplay] " << (m_enableNormalDisplay ? "Enabled" : "Disabled") << endl;
-	cout << "[SingleRay] " << (m_enableSingleRay ? "Enabled" : "Disabled") << endl;
+	cout << "[1SPP] " << (m_enable1SPP ? "Enabled" : "Disabled") << endl;
 	cout << "==========================================" << endl;
 }
 
-void HomemadeRayTracer::Render(const SimpleCamera *camera, OutputImage *image)
+void HomemadeRayTracer::TraceRay(const SimpleCamera *camera, OutputImage *image)
 {
-	cout << "[HomemadeRayTracer] Rendering ..." << endl;
-	if (m_enableSingleRay)
-		cout << "[HomemadeRayTracer] Sample count per pixel: 1" << endl;
+	cout << "[HomemadeRayTracer] TraceRay ..." << endl;
+	if (m_enable1SPP)
+		cout << "[HomemadeRayTracer] SPP: 1" << endl;
 	else
-		cout << "[HomemadeRayTracer] Sample count per pixel: " << SAMPLE_COUNT << endl;
+		cout << "[HomemadeRayTracer] SPP: " << SAMPLE_PER_PIXEL << endl;
 
 	//image->RenderAsRainbow();
 
@@ -106,7 +106,7 @@ void HomemadeRayTracer::Render(const SimpleCamera *camera, OutputImage *image)
 		{
 			Vec3 &col = pixels[j * width + i];
 
-			if (m_enableSingleRay)
+			if (m_enable1SPP)
 			{
 				// Single-sample
 				float u = float(i) / float(width);
@@ -118,7 +118,7 @@ void HomemadeRayTracer::Render(const SimpleCamera *camera, OutputImage *image)
 			{
 				// Multi-sample
 				col.zero();
-				for (UINT32 s = 0; s < SAMPLE_COUNT; s++)
+				for (UINT32 s = 0; s < SAMPLE_PER_PIXEL; s++)
 				{
 					float u = float(i + Randomizer::RandomUNorm()) / float(width);
 					float v = float(j + Randomizer::RandomUNorm()) / float(height);
@@ -126,7 +126,7 @@ void HomemadeRayTracer::Render(const SimpleCamera *camera, OutputImage *image)
 					Ray r = camera->GetRay(u, v);
 					col += Sample(r, 0);
 				}
-				col /= float(SAMPLE_COUNT);
+				col /= float(SAMPLE_PER_PIXEL);
 			}
 
 			// the gamma correction, to the approximation, use the power 1/gamma, and the gamma == 2, which is just square-root.
