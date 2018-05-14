@@ -9,7 +9,6 @@
 #include "D3D12Viewer.h"
 #include "D3D12Helper.h"
 #include "SimpleCamera.h"
-#include "SimpleMotion.h"
 
 using namespace std;
 

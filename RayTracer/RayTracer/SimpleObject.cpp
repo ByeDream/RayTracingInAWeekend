@@ -7,9 +7,8 @@
 #include "SimpleCamera.h"
 #include "Materials.h"
 #include "World.h"
-#include "SimpleMotion.h"
 
-SimpleObjectSphere::SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world, IMotion *motion /*= nullptr*/)
+SimpleObjectSphere::SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world)
 {
 	m_position = center;
 	m_scale = radius;
@@ -19,8 +18,6 @@ SimpleObjectSphere::SimpleObjectSphere(const Vec3 &center, float radius, Mesh *m
 	hitable->BindMaterial(material);
 	m_hitable = hitable;
 	m_world = world;
-	m_motion = motion;
-	hitable->BindMotion(motion);
 }
 
 SimpleObjectSphere::~SimpleObjectSphere()
@@ -34,13 +31,6 @@ SimpleObjectSphere::~SimpleObjectSphere()
 
 void SimpleObjectSphere::Update(SimpleCamera *camera, float elapsedSeconds)
 {
-	// animate
-	m_hitable->OnUpdate(camera, elapsedSeconds);
-	if (m_motion)
-	{
-		m_position = m_motion->Move(m_position, elapsedSeconds);
-	}
-
 	// update constants
 	XMMATRIX scale;
 	XMMATRIX trans;

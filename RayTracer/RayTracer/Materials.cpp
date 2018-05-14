@@ -21,7 +21,7 @@ BOOL Lambertian::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuatio
 	// Scatter a ray back to the air with a random direction from the unit radius sphere that is tangent to the hitpoint
 	// recursively sample the indirect light with absorb half the energy(50% reflectors), until reach the sky light 
 	Vec3 target = rec.m_position + rec.m_normal + Randomizer::RomdomInUnitSphere();
-	r_scattered = Ray(rec.m_position, target - rec.m_position, r_in.m_emittedTimeInMs);
+	r_scattered = Ray(rec.m_position, target - rec.m_position);
 	attenuation = DirectX::XMLoadFloat4(&m_data.m_albedo);
 	return TRUE; // always
 }
@@ -37,7 +37,7 @@ BOOL Metal::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ra
 {
 	Vec3 r_reflected;
 	Optics::Reflect(normalize(r_in.m_dir), rec.m_normal, r_reflected);
-	r_scattered = Ray(rec.m_position, r_reflected + m_data.m_fuzziness.x * Randomizer::RomdomInUnitSphere(), r_in.m_emittedTimeInMs);
+	r_scattered = Ray(rec.m_position, r_reflected + m_data.m_fuzziness.x * Randomizer::RomdomInUnitSphere());
 	attenuation = DirectX::XMLoadFloat4(&m_data.m_albedo);
 	return (dot(r_scattered.m_dir, rec.m_normal) > 0); // absorb the scatter ray if it is below the surface
 }
@@ -85,11 +85,11 @@ BOOL Dielectric::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuatio
 	if (Randomizer::RandomUNorm() < reflect_prob) {
 		Vec3 r_reflected;
 		Optics::Reflect(uv, rec.m_normal, r_reflected);
-		r_scattered = Ray(rec.m_position, r_reflected, r_in.m_emittedTimeInMs);
+		r_scattered = Ray(rec.m_position, r_reflected);
 	}
 	else
 	{
-		r_scattered = Ray(rec.m_position, r_refracted, r_in.m_emittedTimeInMs);
+		r_scattered = Ray(rec.m_position, r_refracted);
 	}
 	return TRUE;
 }

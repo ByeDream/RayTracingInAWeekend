@@ -16,7 +16,6 @@ public:
 		float minZ,
 		float maxZ,
 		float aperture,
-		float shutter,
 		const World *world,
 		InputListener *inputListener
 	);
@@ -48,7 +47,6 @@ private:
 	float							m_nearPlane;
 	float							m_farPlane;
 	float							m_lensRadius;
-	float							m_emittingDurationInMs;
 
 	float							m_moveSpeed;			// Speed at which the camera moves, in units per second.
 	float							m_turnSpeed;			// Speed at which the camera turns, in radians per second.

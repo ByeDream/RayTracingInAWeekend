@@ -8,7 +8,6 @@ class IMaterial;
 class D3D12Viewer;
 class SimpleCamera;
 class World;
-class IMotion;
 
 struct GeometryConstants
 {
@@ -49,8 +48,6 @@ public:
 	IHitable *					m_hitable;
 	IMaterial *					m_material;
 
-	IMotion *					m_motion;
-
 	ObjectD3D12Resources		m_d3dRes;
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) = 0;
@@ -64,7 +61,7 @@ public:
 class SimpleObjectSphere : public Object
 {
 public:
-	SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world, IMotion *motion = nullptr);
+	SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world);
 	virtual ~SimpleObjectSphere() override;
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;

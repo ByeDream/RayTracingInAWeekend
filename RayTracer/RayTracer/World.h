@@ -43,7 +43,7 @@ public:
 	void									ConstructWorld();
 	void									DeconstructWorld();
 
-	void									OnUpdate(SimpleCamera *camera, float elapsedSeconds) override;
+	void									OnUpdate(SimpleCamera *camera, float elapsedSeconds);
 	void									OnRender(D3D12Viewer *viewer) const;
 	virtual BOOL							Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const override;
 
