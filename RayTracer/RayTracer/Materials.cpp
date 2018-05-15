@@ -6,9 +6,21 @@
 #include "Randomizer.h"
 #include "Optics.h"
 
-Lambertian::Lambertian(const Vec3 &albedo)
+#include "SimpleTexture2D.h"
+
+Lambertian::Lambertian(const Vec3 &albedo, ITexture2D *diffuse)
+	: m_diffuse(diffuse)
 {
 	DirectX::XMStoreFloat4(&m_data.m_albedo, albedo.m_simd);
+}
+
+Lambertian::~Lambertian()
+{
+	if (m_diffuse)
+	{
+		delete m_diffuse;
+		m_diffuse = nullptr;
+	}
 }
 
 BOOL Lambertian::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const
@@ -22,7 +34,7 @@ BOOL Lambertian::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuatio
 	// recursively sample the indirect light with absorb half the energy(50% reflectors), until reach the sky light 
 	Vec3 target = rec.m_position + rec.m_normal + Randomizer::RomdomInUnitSphere();
 	r_scattered = Ray(rec.m_position, target - rec.m_position);
-	attenuation = DirectX::XMLoadFloat4(&m_data.m_albedo);
+	attenuation = m_diffuse->Sample(0, 0, rec.m_position);
 	return TRUE; // always
 }
 

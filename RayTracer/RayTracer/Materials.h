@@ -2,6 +2,8 @@
 
 #include "Vec3.h"
 
+class ITexture2D;
+
 enum MaterialID
 {
 	MID_LAMBERTIAN = 0,
@@ -32,7 +34,10 @@ public:
 	};
 	Data m_data;
 
-	Lambertian(const Vec3 &albedo);
+	ITexture2D *m_diffuse{ nullptr };
+
+	Lambertian(const Vec3 &albedo, ITexture2D *diffuse);
+	virtual ~Lambertian();
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const override;
 	virtual size_t GetDataSize() const override { return sizeof(Lambertian::Data); }
 	virtual const void * GetDataPtr() const override { return &m_data; }

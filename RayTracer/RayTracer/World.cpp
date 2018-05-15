@@ -8,6 +8,7 @@
 #include "D3D12Viewer.h"
 #include "D3D12Helper.h"
 #include "SimpleCamera.h"
+#include "SimpleTexture2D.h"
 
 using namespace std;
 
@@ -250,7 +251,8 @@ void World::LoadMaterials()
 	IMaterial *material;
 	for (auto i = 0; i < MATERIAL_ID_RANDOM_LAMBERTIAN_COUNT; i++)
 	{
-		material = new Lambertian(Vec3(Randomizer::RandomUNorm() * Randomizer::RandomUNorm(), Randomizer::RandomUNorm() * Randomizer::RandomUNorm(), Randomizer::RandomUNorm()* Randomizer::RandomUNorm()));
+		Vec3 diffuse(Randomizer::RandomUNorm() * Randomizer::RandomUNorm(), Randomizer::RandomUNorm() * Randomizer::RandomUNorm(), Randomizer::RandomUNorm()* Randomizer::RandomUNorm());
+		material = new Lambertian(diffuse, new SimpleTexture2D_SingleColor(diffuse));
 		m_materials.push_back(material);
 	}
 
@@ -261,11 +263,13 @@ void World::LoadMaterials()
 	}
 
 	// MATERIAL_ID_GROUND
-	material = new Lambertian(Vec3(0.5f, 0.5f, 0.5f));
+	Vec3 diffuse(0.5f, 0.5f, 0.5f);
+	material = new Lambertian(diffuse, new SimpleTexture2D_Checker(Vec3(0.2f, 0.3f, 0.1f), Vec3(0.9f, 0.9f, 0.9f)));
 	m_materials.push_back(material);
 
 	// MATERIAL_ID_LAMBERTIAN
-	material = new Lambertian(Vec3(0.4f, 0.2f, 0.1f));
+	diffuse = Vec3(0.4f, 0.2f, 0.1f);
+	material = new Lambertian(diffuse, new SimpleTexture2D_SingleColor(diffuse));
 	m_materials.push_back(material);
 
 	// MATERIAL_ID_METAL

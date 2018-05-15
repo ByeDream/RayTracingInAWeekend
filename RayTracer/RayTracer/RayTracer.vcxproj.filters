@@ -102,6 +102,9 @@
     <ClInclude Include="AABB.h">
       <Filter>Source\3DScene</Filter>
     </ClInclude>
+    <ClInclude Include="SimpleTexture2D.h">
+      <Filter>Source\3DScene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracer.cpp">
@@ -150,6 +153,9 @@
       <Filter>Source\3DScene</Filter>
     </ClCompile>
     <ClCompile Include="AABB.cpp">
+      <Filter>Source\3DScene</Filter>
+    </ClCompile>
+    <ClCompile Include="SimpleTexture2D.cpp">
       <Filter>Source\3DScene</Filter>
     </ClCompile>
   </ItemGroup>
