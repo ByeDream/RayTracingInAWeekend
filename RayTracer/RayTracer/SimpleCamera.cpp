@@ -8,6 +8,8 @@
 
 #include "InputListener.h"
 
+#include "SimpleObject.h"
+
 using namespace std;
 
 SimpleCamera::SimpleCamera(const Vec3 &lookFrom, const Vec3 &lookAt, float fov, float aspectRatio, float minZ, float maxZ, float aperture, const World *world, InputListener *inputListener)
@@ -189,7 +191,9 @@ BOOL SimpleCamera::AutoFocus(const Vec3 &lookDir)
 {
 	HitRecord rec;
 	Ray r(m_origin, lookDir);
-	if (m_world->Hit(r, 0.01f, FLT_MAX, rec))
+	float nearest = 0.01f;
+	float cloestSoFar = FLT_MAX;
+	if (m_world->GetObjectBVHTree()->Hit(r, nearest, cloestSoFar, rec))
 	{
 		m_focus = rec.m_position;
 	}

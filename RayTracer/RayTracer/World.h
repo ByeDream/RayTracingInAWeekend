@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Hitables.h"
+#include "Vec3.h"
+#include "Materials.h"
 
 class Mesh;
 class IMaterial;
@@ -8,6 +9,7 @@ class Object;
 class D3D12Viewer;
 struct PipelineState;
 class SimpleCamera;
+class SimpleObjectBVHNode;
 
 enum MeshUniqueID
 {
@@ -34,7 +36,7 @@ enum MaterialUniqueID
 	MATERIAL_ID_TOTAL_COUNT
 };
 
-class World : public IHitable
+class World
 {
 public:
 	World() = default;
@@ -45,11 +47,12 @@ public:
 
 	void									OnUpdate(SimpleCamera *camera, float elapsedSeconds);
 	void									OnRender(D3D12Viewer *viewer) const;
-	virtual BOOL							Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const override;
 
 	void									BuildD3DRes(D3D12Viewer *viewer);
+	SimpleObjectBVHNode	*					GetObjectBVHTree() const { return m_objectBVHTree; }
 
 	inline UINT32							GetFrameIndex() const { return m_CurrentCbvIndex; }
+
 	static const Vec3						SkyLight;
 	static const float						SkyLightBlender;
 private:
@@ -59,16 +62,11 @@ private:
 	std::vector<Mesh *>						m_meshes;
 	std::vector<IMaterial *>				m_materials;
 
+	// TODO : Do we need a separate render ?
 	// sort by materials to avoid pipeline state switching
-	std::vector<Object *>					m_lambertianObjects;
-	PipelineState *							m_lambertianPipelineState{ nullptr };
-	std::vector<Object *>					m_metalObjects;
-	PipelineState *							m_metalPipelineState{ nullptr };
-	std::vector<Object *>					m_dielectricObjects;
-	PipelineState *							m_dielectricPipelineState{ nullptr };
-
-	std::vector<Object *>					m_objects; // for ray tracing, don't really care about sorting
-	UINT32									m_objectsCount{ 0 };
+	PipelineState *							m_pipelineStates[MID_COUNT];
+	SimpleObjectBVHNode	*					m_objectBVHTree{ nullptr };
+	size_t									m_objectsCount{ 0 };
 
 	ComPtr<ID3D12DescriptorHeap>			m_CbvHeap;
 	UINT32									m_CurrentCbvIndex;

@@ -2,6 +2,15 @@
 
 #include "Vec3.h"
 
+enum MaterialID
+{
+	MID_LAMBERTIAN = 0,
+	MID_METAL,
+	MID_DIELECTRIC,
+
+	MID_COUNT
+};
+
 class Ray;
 struct HitRecord;
 
@@ -11,6 +20,7 @@ public:
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const = 0;
 	virtual size_t GetDataSize() const = 0;
 	virtual const void * GetDataPtr() const = 0;
+	virtual MaterialID GetID() const = 0;
 };
 
 class Lambertian : public IMaterial
@@ -26,6 +36,7 @@ public:
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const override;
 	virtual size_t GetDataSize() const override { return sizeof(Lambertian::Data); }
 	virtual const void * GetDataPtr() const override { return &m_data; }
+	virtual MaterialID GetID() const override { return MID_LAMBERTIAN; }
 };
 
 class Metal : public IMaterial
@@ -44,6 +55,7 @@ public:
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const override;
 	virtual size_t GetDataSize() const override { return sizeof(Metal::Data); }
 	virtual const void * GetDataPtr() const override { return &m_data; }
+	virtual MaterialID GetID() const override { return MID_METAL; }
 };
 
 class Dielectric : public IMaterial
@@ -59,4 +71,5 @@ public:
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const override;
 	virtual size_t GetDataSize() const override { return sizeof(Metal::Data); }
 	virtual const void * GetDataPtr() const override { return &m_data; }
+	virtual MaterialID GetID() const override { return MID_DIELECTRIC; }
 };

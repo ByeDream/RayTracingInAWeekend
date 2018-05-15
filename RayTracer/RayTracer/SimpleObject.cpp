@@ -7,6 +7,9 @@
 #include "SimpleCamera.h"
 #include "Materials.h"
 #include "World.h"
+#include "Randomizer.h"
+
+using namespace std;
 
 SimpleObjectSphere::SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world)
 {
@@ -51,18 +54,38 @@ void SimpleObjectSphere::Update(SimpleCamera *camera, float elapsedSeconds)
 	memcpy(m_d3dRes.m_pMtlConstants + m_d3dRes.m_MtlConstantBufferSize * m_world->GetFrameIndex(), m_material->GetDataPtr(), m_material->GetDataSize());
 }
 
-void SimpleObjectSphere::Render(D3D12Viewer *viewer) const
+void SimpleObjectSphere::Render(D3D12Viewer *viewer, UINT32 mid) const
 {
-	ID3D12GraphicsCommandList *commandList = viewer->GetGraphicsCommandList();
+	if (m_material && m_material->GetID() == mid)
+	{
+		ID3D12GraphicsCommandList *commandList = viewer->GetGraphicsCommandList();
 
-	commandList->SetGraphicsRootDescriptorTable(0, m_d3dRes.m_GeoCbvHandles[m_world->GetFrameIndex()]);
-	commandList->SetGraphicsRootDescriptorTable(1, m_d3dRes.m_MtlCbvHandles[m_world->GetFrameIndex()]);
-	commandList->SetGraphicsRootDescriptorTable(2, m_world->GetIllumCbvHandle(m_world->GetFrameIndex()));
+		commandList->SetGraphicsRootDescriptorTable(0, m_d3dRes.m_GeoCbvHandles[m_world->GetFrameIndex()]);
+		commandList->SetGraphicsRootDescriptorTable(1, m_d3dRes.m_MtlCbvHandles[m_world->GetFrameIndex()]);
+		commandList->SetGraphicsRootDescriptorTable(2, m_world->GetIllumCbvHandle(m_world->GetFrameIndex()));
 
-	commandList->IASetPrimitiveTopology(ConvertPrimitiveType(m_mesh->m_primitiveType));
-	commandList->IASetIndexBuffer(&m_mesh->m_d3dRes.m_indexBufferView);
-	commandList->IASetVertexBuffers(0, 1, &m_mesh->m_d3dRes.m_vertexBufferView);
-	commandList->DrawIndexedInstanced(m_mesh->m_indexCount, 1, 0, 0, 0);
+		commandList->IASetPrimitiveTopology(ConvertPrimitiveType(m_mesh->m_primitiveType));
+		commandList->IASetIndexBuffer(&m_mesh->m_d3dRes.m_indexBufferView);
+		commandList->IASetVertexBuffers(0, 1, &m_mesh->m_d3dRes.m_vertexBufferView);
+		commandList->DrawIndexedInstanced(m_mesh->m_indexCount, 1, 0, 0, 0);
+	}
+}
+
+AABB SimpleObjectSphere::BoundingBox() const
+{
+	return AABB(m_position - Vec3(m_scale, m_scale, m_scale), m_position + Vec3(m_scale, m_scale, m_scale));
+}
+
+BOOL SimpleObjectSphere::Hit(const Ray &r, float &t_min, float &t_max, HitRecord &rec) const
+{
+	BOOL hitMe = FALSE;
+	if (m_hitable->Hit(r, t_min, t_max, rec))
+	{
+		t_max = rec.m_time;
+		hitMe = TRUE;
+	}
+
+	return hitMe;
 }
 
 void SimpleObjectSphere::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle)
@@ -141,4 +164,138 @@ void SimpleObjectSphere::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR
 			cbvCPUHandle.Offset(handleOffset);
 		}
 	}	
+}
+
+
+SimpleObjectBVHNode::SimpleObjectBVHNode(std::vector<Object *> objects)
+{
+	assert(!objects.empty());
+
+	// sort objects with order
+	UINT32 axis = UINT32(3 * Randomizer::RandomUNorm());
+	if (axis == 0)
+		sort(objects.begin(), objects.end(), [](Object * a, Object * b) { return b->m_position.x() < a->m_position.x(); });
+	else if(axis == 1)
+		sort(objects.begin(), objects.end(), [](Object * a, Object * b) { return b->m_position.y() < a->m_position.y(); });
+	else
+		sort(objects.begin(), objects.end(), [](Object * a, Object * b) { return b->m_position.z() < a->m_position.z(); });
+
+	// divide into two
+	vector<Object *>::size_type fullsize = objects.size();
+	if (fullsize == 1)
+	{
+		leftChild = objects[0];
+		rightChild = nullptr;
+
+		m_bindingBox = leftChild->BoundingBox();
+	}
+	else if (fullsize == 2)
+	{
+		leftChild = objects[0];
+		rightChild = objects[1];
+
+		// generate binding box by combine 2 children's
+		m_bindingBox = CombineAABB(leftChild->BoundingBox(), rightChild->BoundingBox());
+	}
+	else if (fullsize > 2)
+	{
+		vector<Object *>::size_type halfsize = static_cast<vector<Object *>::size_type>(fullsize * 0.5f);
+		vector<Object *> leftObjects;
+		vector<Object *> rightObjects;
+
+		for (auto i = 0; i < fullsize; ++i)
+		{
+			if (i < halfsize)
+				leftObjects.push_back(objects[i]);
+			else
+				rightObjects.push_back(objects[i]);
+		}
+		leftChild = new SimpleObjectBVHNode(leftObjects);
+		rightChild = new SimpleObjectBVHNode(rightObjects);
+
+		// generate binding box by combine 2 children's
+		m_bindingBox = CombineAABB(leftChild->BoundingBox(), rightChild->BoundingBox());
+	}
+	else
+	{
+		assert(FALSE);
+	}
+}
+
+SimpleObjectBVHNode::~SimpleObjectBVHNode()
+{
+	if (leftChild)
+	{
+		delete leftChild;
+		leftChild = nullptr;
+	}
+
+	if (rightChild)
+	{
+		delete rightChild;
+		rightChild = nullptr;
+	}
+}
+
+void SimpleObjectBVHNode::Update(SimpleCamera *camera, float elapsedSeconds)
+{
+	if (leftChild)
+	{
+		leftChild->Update(camera, elapsedSeconds);
+	}
+
+	if (rightChild)
+	{
+		rightChild->Update(camera, elapsedSeconds);
+	}
+}
+
+void SimpleObjectBVHNode::Render(D3D12Viewer *viewer, UINT32 mid) const
+{
+	if (leftChild)
+	{
+		leftChild->Render(viewer, mid);
+	}
+
+	if (rightChild)
+	{
+		rightChild->Render(viewer, mid);
+	}
+}
+
+BOOL SimpleObjectBVHNode::Hit(const Ray &r, float &t_min, float &t_max, HitRecord &out_rec) const
+{
+	BOOL hitMe = FALSE;
+	if (m_bindingBox.Hit(r, t_min, t_max))
+	{
+		if (leftChild) 
+		{
+			hitMe |= leftChild->Hit(r, t_min, t_max, out_rec);
+		}
+
+		if (rightChild)
+		{
+			hitMe |= rightChild->Hit(r, t_min, t_max, out_rec);
+		}
+	}
+
+	return hitMe;
+}
+
+AABB SimpleObjectBVHNode::BoundingBox() const
+{
+	return m_bindingBox;
+}
+
+void SimpleObjectBVHNode::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle)
+{
+	if (leftChild)
+	{
+		leftChild->BuildD3DRes(viewer, cbvCPUHandle, cbvGPUHandle);
+	}
+
+	if (rightChild)
+	{
+		rightChild->BuildD3DRes(viewer, cbvCPUHandle, cbvGPUHandle);
+	}
 }

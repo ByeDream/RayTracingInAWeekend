@@ -10,6 +10,9 @@
 #include "InputListener.h"
 #include "Materials.h"
 
+#include "SimpleObject.h"
+#include "Hitables.h"
+
 using namespace std;
 
 #define SHOW_PROGRESS
@@ -152,8 +155,9 @@ Vec3 HomemadeRayTracer::Sample(const Ray &r, UINT32 depth) const
 {
 	Vec3 col;
 	HitRecord rec;
-	// Ignore hits very near 0 to get rid of the shdow acne.
-	if (m_world->Hit(r, 0.001f, FLT_MAX, rec))
+	float nearest = 0.001f; // Ignore hits very near 0 to get rid of the shadow acne.
+	float cloestSoFar = FLT_MAX;
+	if (m_world->GetObjectBVHTree()->Hit(r, nearest, cloestSoFar, rec))
 	{
 		if (m_enableNormalDisplay)
 		{

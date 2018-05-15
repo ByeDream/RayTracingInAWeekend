@@ -163,6 +163,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AABB.h" />
     <ClInclude Include="D3D12Helper.h" />
     <ClInclude Include="D3D12Viewer.h" />
     <ClInclude Include="d3dx12.h" />
@@ -189,6 +190,7 @@
     <ClInclude Include="World.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AABB.cpp" />
     <ClCompile Include="D3D12Viewer.cpp" />
     <ClCompile Include="Hitables.cpp" />
     <ClCompile Include="HomemadeRayTracer.cpp" />

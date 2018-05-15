@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Vec3.h"
+#include "AABB.h"
 
 class Mesh;
 class IHitable;
@@ -8,6 +9,7 @@ class IMaterial;
 class D3D12Viewer;
 class SimpleCamera;
 class World;
+struct HitRecord;
 
 struct GeometryConstants
 {
@@ -51,7 +53,9 @@ public:
 	ObjectD3D12Resources		m_d3dRes;
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) = 0;
-	virtual void				Render(D3D12Viewer *viewer) const = 0;
+	virtual void				Render(D3D12Viewer *viewer, UINT32 mid) const = 0;
+	virtual AABB				BoundingBox() const = 0; // return bool as some object doesn't have bounding-box like a plane
+	virtual BOOL				Hit(const Ray &r, float &t_min, float &t_max, HitRecord &out_rec) const  = 0;
 	virtual void				BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle) = 0;
 };
 
@@ -65,8 +69,27 @@ public:
 	virtual ~SimpleObjectSphere() override;
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
-	virtual void				Render(D3D12Viewer *viewer) const override;
+	virtual void				Render(D3D12Viewer *viewer, UINT32 mid) const override;
+	virtual AABB				BoundingBox() const override;
+	virtual BOOL				Hit(const Ray &r, float &t_min, float &t_max, HitRecord &out_rec) const override;
 	virtual void				BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle) override;
 };
 
 // TODO more
+
+class SimpleObjectBVHNode : public Object
+{
+public:
+	SimpleObjectBVHNode(std::vector<Object *> objects);
+	virtual ~SimpleObjectBVHNode() override;
+
+	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
+	virtual void				Render(D3D12Viewer *viewer, UINT32 mid) const override;
+	virtual BOOL				Hit(const Ray &r, float &t_min, float &t_max, HitRecord &out_rec) const override;
+	virtual AABB				BoundingBox() const override;
+	virtual void				BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle) override;
+
+	AABB m_bindingBox;
+	Object *leftChild{ nullptr };
+	Object *rightChild{ nullptr };
+};

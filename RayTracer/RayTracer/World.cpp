@@ -2,7 +2,6 @@
 #include "World.h"
 #include "SimpleMesh.h"
 #include "SimpeMeshBuilder.h"
-#include "Materials.h"
 #include "SimpleObject.h"
 #include "Hitables.h"
 #include "Randomizer.h"
@@ -23,13 +22,15 @@ void World::ConstructWorld()
 	LoadMeshes();
 	LoadMaterials();
 
+	std::vector<Object *> objects;
+
 	// ground
-	m_lambertianObjects.push_back(new SimpleObjectSphere(Vec3(0.0f, -1000.0f, -0.0f), 1000.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_GROUND], this));
+	objects.push_back(new SimpleObjectSphere(Vec3(0.0f, -1000.0f, -0.0f), 1000.0f, m_meshes[MESH_ID_HIGH_POLYGON_SPHERE], m_materials[MATERIAL_ID_GROUND], this));
 
 	// bigger spheres
-	m_lambertianObjects.push_back(new SimpleObjectSphere(Vec3(-4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_LAMBERTIAN], this));
-	m_dielectricObjects.push_back(new SimpleObjectSphere(Vec3(0.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_DIELECTRIC], this));
-	m_metalObjects.push_back(new SimpleObjectSphere(Vec3(4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_METAL], this));
+	objects.push_back(new SimpleObjectSphere(Vec3(-4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_LAMBERTIAN], this));
+	objects.push_back(new SimpleObjectSphere(Vec3(0.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_DIELECTRIC], this));
+	objects.push_back(new SimpleObjectSphere(Vec3(4.0f, 1.0f, 0.0f), 1.0f, m_meshes[MESH_ID_MEDIUM_POLYGON_SPHERE], m_materials[MATERIAL_ID_METAL], this));
 
 	// random smaller spheres
 #if 1
@@ -42,41 +43,25 @@ void World::ConstructWorld()
 			if ((center - Vec3(4.0f, 0.2f, 0.0f)).length() > 0.9f)
 			{
 				MaterialUniqueID materialID = MATERIAL_ID_DIELECTRIC;
-				std::vector<Object *> *objectPool = &m_dielectricObjects;
 				if (chooseMat < 0.8f) 
 				{
 					//diffuse
 					materialID = (MaterialUniqueID)(UINT32)(MATERIAL_ID_RANDOM_LAMBERTIAN_START + Randomizer::RandomUNorm() * MATERIAL_ID_RANDOM_LAMBERTIAN_COUNT);
-					objectPool = &m_lambertianObjects;
 				}
 				else if (chooseMat < 0.95)
 				{
 					// metal
 					materialID = (MaterialUniqueID)(UINT32)(MATERIAL_ID_RANDOM_METAL_START + Randomizer::RandomUNorm() * MATERIAL_ID_RANDOM_METAL_COUNT);
-					objectPool = &m_metalObjects;
 				}
 				
-				objectPool->push_back(new SimpleObjectSphere(center, 0.2f, m_meshes[MESH_ID_LOW_POLYGON_SPHERE], m_materials[materialID], this));
+				objects.push_back(new SimpleObjectSphere(center, 0.2f, m_meshes[MESH_ID_LOW_POLYGON_SPHERE], m_materials[materialID], this));
 			}
 		}
 	}
 #endif
 
-	for (auto i = m_lambertianObjects.begin(); i != m_lambertianObjects.end(); i++)
-	{
-		m_objects.push_back(*i);
-		m_objectsCount++;
-	}
-	for (auto i = m_metalObjects.begin(); i != m_metalObjects.end(); i++)
-	{
-		m_objects.push_back(*i);
-		m_objectsCount++;
-	}
-	for (auto i = m_dielectricObjects.begin(); i != m_dielectricObjects.end(); i++)
-	{
-		m_objects.push_back(*i);
-		m_objectsCount++;
-	}
+	m_objectsCount = objects.size();
+	m_objectBVHTree = new SimpleObjectBVHNode(objects);
 }
 
 
@@ -84,28 +69,20 @@ void World::DeconstructWorld()
 {
 	cout << "[World] DeconstructWorld" << endl;
 
-	if (m_lambertianPipelineState)
+
+	for (auto i = 0; i < MID_COUNT; ++i)
 	{
-		delete m_lambertianPipelineState;
-		m_lambertianPipelineState = nullptr;
-	}
-	if (m_metalPipelineState)
-	{
-		delete m_metalPipelineState;
-		m_metalPipelineState = nullptr;
-	}
-	if (m_dielectricPipelineState)
-	{
-		delete m_dielectricPipelineState;
-		m_dielectricPipelineState = nullptr;
+		if (m_pipelineStates[i])
+		{
+			delete m_pipelineStates[i];
+			m_pipelineStates[i] = nullptr;
+		}
 	}
 
-	for (auto i = m_objects.begin(); i != m_objects.end(); i++)
+	if (m_objectBVHTree)
 	{
-		if ((*i) != nullptr)
-		{
-			delete (*i);
-		}
+		delete m_objectBVHTree;
+		m_objectBVHTree = nullptr;
 	}
 
 	for (auto i = m_materials.begin(); i != m_materials.end(); i++)
@@ -146,57 +123,21 @@ void World::OnUpdate(SimpleCamera *camera, float elapsedSeconds)
 	memcpy(m_pIllumConstants + m_IllumConstantBufferSize * m_CurrentCbvIndex, &constants, sizeof(IllumConstants));
 	////////////////////////
 
-	for (auto i = m_objects.begin(); i != m_objects.end(); i++)
-	{
-		(*i)->Update(camera, elapsedSeconds);
-	}
+	m_objectBVHTree->Update(camera, elapsedSeconds);
 }
 
 void World::OnRender(D3D12Viewer *viewer) const
 {
 	ID3D12GraphicsCommandList *commandList = viewer->GetGraphicsCommandList();
-
-	commandList->SetPipelineState(m_lambertianPipelineState->m_PSO.Get());
-	commandList->SetGraphicsRootSignature(m_lambertianPipelineState->m_RS.Get());
-
 	ID3D12DescriptorHeap* ppHeaps[] = { m_CbvHeap.Get() };
 	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-	
-	for (auto i = m_lambertianObjects.begin(); i != m_lambertianObjects.end(); i++)
-	{
-		(*i)->Render(viewer);
-	}
 
-	commandList->SetPipelineState(m_metalPipelineState->m_PSO.Get());
-	commandList->SetGraphicsRootSignature(m_metalPipelineState->m_RS.Get());
-	for (auto i = m_metalObjects.begin(); i != m_metalObjects.end(); i++)
+	for (UINT32 mid = 0; mid < MID_COUNT; ++mid)
 	{
-		(*i)->Render(viewer);
+		commandList->SetPipelineState(m_pipelineStates[mid]->m_PSO.Get());
+		commandList->SetGraphicsRootSignature(m_pipelineStates[mid]->m_RS.Get());
+		m_objectBVHTree->Render(viewer, mid);
 	}
-
-	commandList->SetPipelineState(m_dielectricPipelineState->m_PSO.Get());
-	commandList->SetGraphicsRootSignature(m_dielectricPipelineState->m_RS.Get());
-	for (auto i = m_dielectricObjects.begin(); i != m_dielectricObjects.end(); i++)
-	{
-		(*i)->Render(viewer);
-	}
-}
-
-BOOL World::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const
-{
-	HitRecord rec;
-	BOOL hitAnything = FALSE;
-	float cloestSoFar = t_max;
-	for (auto i = m_objects.begin(); i != m_objects.end(); i++)
-	{
-		if ((*i)->m_hitable->Hit(r, t_min, cloestSoFar, rec))
-		{
-			hitAnything = TRUE;
-			cloestSoFar = rec.m_time;
-			out_rec = rec;
-		}
-	}
-	return hitAnything;
 }
 
 void World::BuildD3DRes(D3D12Viewer *viewer)
@@ -208,7 +149,7 @@ void World::BuildD3DRes(D3D12Viewer *viewer)
 
 	// create CBV heap
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
-	cbvHeapDesc.NumDescriptors = D3D12Viewer::FrameCount * 2 * m_objectsCount + D3D12Viewer::FrameCount;  //big enough for use, FrameCount * geo + FrameCount *mtl per objects
+	cbvHeapDesc.NumDescriptors = D3D12Viewer::FrameCount * 2 * (UINT32)m_objectsCount + D3D12Viewer::FrameCount;  //big enough for use, FrameCount * geo + FrameCount *mtl per objects
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(viewer->GetDevice()->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_CbvHeap)));
@@ -217,10 +158,7 @@ void World::BuildD3DRes(D3D12Viewer *viewer)
 	CD3DX12_CPU_DESCRIPTOR_HANDLE cbvCPUHandle(m_CbvHeap->GetCPUDescriptorHandleForHeapStart());
 	CD3DX12_GPU_DESCRIPTOR_HANDLE cbvGPUHandle(m_CbvHeap->GetGPUDescriptorHandleForHeapStart());
 
-	for (auto i = m_objects.begin(); i != m_objects.end(); i++)
-	{
-		(*i)->BuildD3DRes(viewer, cbvCPUHandle, cbvGPUHandle);
-	}
+	m_objectBVHTree->BuildD3DRes(viewer, cbvCPUHandle, cbvGPUHandle);
 
 	////////////////////////
 	// TODO Light, put them here at the moment
@@ -282,11 +220,11 @@ void World::BuildD3DRes(D3D12Viewer *viewer)
 
 	D3D12_INPUT_LAYOUT_DESC inputLayout{ SimpleMesh::D3DVertexDeclaration, SimpleMesh::D3DVertexDeclarationElementCount };
 
-	m_lambertianPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\lambertian.hlsl", inputLayout, TRUE, TRUE, TRUE, FALSE);
+	m_pipelineStates[MID_LAMBERTIAN] = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\lambertian.hlsl", inputLayout, TRUE, TRUE, TRUE, FALSE);
 
-	m_metalPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\metal.hlsl", inputLayout, TRUE, TRUE, TRUE, FALSE);
+	m_pipelineStates[MID_METAL] = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\metal.hlsl", inputLayout, TRUE, TRUE, TRUE, FALSE);
 
-	m_dielectricPipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\dielectric.hlsl", inputLayout, TRUE, TRUE, FALSE, TRUE);
+	m_pipelineStates[MID_DIELECTRIC] = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\dielectric.hlsl", inputLayout, TRUE, TRUE, FALSE, TRUE);
 }
 
 void World::LoadMeshes()
