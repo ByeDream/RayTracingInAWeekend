@@ -24,3 +24,10 @@ public:
 	Vec3 m_color0;
 	Vec3 m_color1;
 };
+
+// just for debug:
+class SimpleTexture2D_DisplayUV : public ITexture2D
+{
+public:
+	virtual Vec3 Sample(float u, float v, const Vec3 &p) const override { return Vec3(u, v, 1.0f); }
+};

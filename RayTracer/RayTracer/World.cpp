@@ -269,7 +269,7 @@ void World::LoadMaterials()
 
 	// MATERIAL_ID_LAMBERTIAN
 	diffuse = Vec3(0.4f, 0.2f, 0.1f);
-	material = new Lambertian(diffuse, new SimpleTexture2D_SingleColor(diffuse));
+	material = new Lambertian(diffuse, new SimpleTexture2D_DisplayUV());
 	m_materials.push_back(material);
 
 	// MATERIAL_ID_METAL

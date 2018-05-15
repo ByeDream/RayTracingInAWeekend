@@ -10,6 +10,8 @@ struct HitRecord
 	float m_time;
 	Vec3 m_position;
 	Vec3 m_normal;
+	float m_u;
+	float m_v;
 	IMaterial *m_hitMaterial;
 };
 
@@ -33,4 +35,7 @@ public:
 	SphereHitable(const Vec3 &center, float radius);
 	virtual BOOL Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const override;
 	void BindMaterial(IMaterial *m) { m_material = m; }
+
+private:
+	void CalculateUV(HitRecord &rec) const;
 };

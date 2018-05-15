@@ -34,7 +34,7 @@ BOOL Lambertian::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuatio
 	// recursively sample the indirect light with absorb half the energy(50% reflectors), until reach the sky light 
 	Vec3 target = rec.m_position + rec.m_normal + Randomizer::RomdomInUnitSphere();
 	r_scattered = Ray(rec.m_position, target - rec.m_position);
-	attenuation = m_diffuse->Sample(0, 0, rec.m_position);
+	attenuation = m_diffuse->Sample(rec.m_u, rec.m_v, rec.m_position);
 	return TRUE; // always
 }
 
