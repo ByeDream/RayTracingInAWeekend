@@ -29,5 +29,5 @@ public:
 class SimpleTexture2D_DisplayUV : public ITexture2D
 {
 public:
-	virtual Vec3 Sample(float u, float v, const Vec3 &p) const override { return Vec3(u, v, 1.0f); }
+	virtual Vec3 Sample(float u, float v, const Vec3 &p) const override { return Vec3(u, v, 0.0f); }
 };

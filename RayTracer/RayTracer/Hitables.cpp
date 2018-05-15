@@ -55,8 +55,12 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 
 void SphereHitable::CalculateUV(HitRecord &rec) const
 {
-	float phi = atan2(rec.m_position.z(), rec.m_position.x());
-	float theta = asin(rec.m_position.y());
+	// hit point in model space
+	Vec3 p = rec.m_position - m_center;
+	p.normalize();
+
+	float phi = atan2(p.z(), p.x());
+	float theta = asin(p.y());
 
 	rec.m_u = 1.0f - (phi + (float)M_PI) / (2.0f * (float)M_PI);
 	rec.m_v = (theta + (float)M_PI / 2.0f) / (float)M_PI;
