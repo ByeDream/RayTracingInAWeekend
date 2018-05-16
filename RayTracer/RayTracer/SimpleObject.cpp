@@ -60,6 +60,8 @@ void SimpleObjectSphere::Render(D3D12Viewer *viewer, UINT32 mid) const
 	{
 		ID3D12GraphicsCommandList *commandList = viewer->GetGraphicsCommandList();
 
+		m_material->ApplySRV(viewer);
+
 		commandList->SetGraphicsRootDescriptorTable(0, m_d3dRes.m_GeoCbvHandles[m_world->GetFrameIndex()]);
 		commandList->SetGraphicsRootDescriptorTable(1, m_d3dRes.m_MtlCbvHandles[m_world->GetFrameIndex()]);
 		commandList->SetGraphicsRootDescriptorTable(2, m_world->GetIllumCbvHandle(m_world->GetFrameIndex()));

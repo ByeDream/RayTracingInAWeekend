@@ -2,32 +2,38 @@
 
 #include "Vec3.h"
 
+class D3D12Viewer;
+
+struct Texture2DD3D12Resources
+{
+	ComPtr<ID3D12Resource>			m_texture;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE	m_SRVHandle;
+};
+
 class ITexture2D
 {
 public:
-	virtual Vec3 Sample(float u, float v, const Vec3 &p) const = 0;
+	virtual Vec3 Sample(float u, float v) const = 0;
+	virtual void BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &srvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &srvGPUHandle) = 0;
+
+	Texture2DD3D12Resources m_d3dRes;
 };
 
-class SimpleTexture2D_SingleColor : public ITexture2D
+
+class SimpleTexture2D : public ITexture2D
 {
 public:
-	SimpleTexture2D_SingleColor(const Vec3 &col) : m_color(col) {}
-	virtual Vec3 Sample(float u, float v, const Vec3 &p) const override { return m_color; }
+	virtual void BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &srvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &srvGPUHandle) override;
+
+	UINT32 m_width{ 0 };
+	UINT32 m_height{ 0 };
+	UINT8 *m_pixelData{ nullptr };
+};
+
+class SimpleTexture2D_SingleColor : public SimpleTexture2D
+{
+public:
+	SimpleTexture2D_SingleColor(const Vec3 &col);
+	virtual Vec3 Sample(float u, float v) const override { return m_color; }
 	Vec3 m_color;
-};
-
-class SimpleTexture2D_Checker : public ITexture2D
-{
-public:
-	SimpleTexture2D_Checker(const Vec3 &col0, const Vec3 &col1) : m_color0(col0), m_color1(col1) {}
-	virtual Vec3 Sample(float u, float v, const Vec3 &p) const override;
-	Vec3 m_color0;
-	Vec3 m_color1;
-};
-
-// just for debug:
-class SimpleTexture2D_DisplayUV : public ITexture2D
-{
-public:
-	virtual Vec3 Sample(float u, float v, const Vec3 &p) const override { return Vec3(u, v, 0.0f); }
 };

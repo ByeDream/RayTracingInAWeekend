@@ -7,20 +7,12 @@
 #include "Optics.h"
 
 #include "SimpleTexture2D.h"
+#include "D3D12Viewer.h"
 
-Lambertian::Lambertian(const Vec3 &albedo, ITexture2D *diffuse)
-	: m_diffuse(diffuse)
+Lambertian::Lambertian(const ITexture2D *albedo)
+	: m_albedo(albedo)
 {
-	DirectX::XMStoreFloat4(&m_data.m_albedo, albedo.m_simd);
-}
 
-Lambertian::~Lambertian()
-{
-	if (m_diffuse)
-	{
-		delete m_diffuse;
-		m_diffuse = nullptr;
-	}
 }
 
 BOOL Lambertian::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered) const
@@ -34,14 +26,20 @@ BOOL Lambertian::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuatio
 	// recursively sample the indirect light with absorb half the energy(50% reflectors), until reach the sky light 
 	Vec3 target = rec.m_position + rec.m_normal + Randomizer::RomdomInUnitSphere();
 	r_scattered = Ray(rec.m_position, target - rec.m_position);
-	attenuation = m_diffuse->Sample(rec.m_u, rec.m_v, rec.m_position);
+	attenuation = m_albedo->Sample(rec.m_u, rec.m_v);
 	return TRUE; // always
 }
 
 
-Metal::Metal(const Vec3 &albedo, float fuzziness)
+void Lambertian::ApplySRV(D3D12Viewer *viewer) const
 {
-	DirectX::XMStoreFloat4(&m_data.m_albedo, albedo.m_simd);
+	ID3D12GraphicsCommandList *commandList = viewer->GetGraphicsCommandList();
+	commandList->SetGraphicsRootDescriptorTable(3, m_albedo->m_d3dRes.m_SRVHandle);
+}
+
+Metal::Metal(ITexture2D *albedo, float fuzziness)
+	: m_albedo(albedo)
+{
 	m_data.m_fuzziness.x = (fuzziness < 1.0f) ? ((fuzziness >= 0.0f) ? fuzziness : 0.0f) : 1.0f;
 }
 
@@ -50,8 +48,14 @@ BOOL Metal::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ra
 	Vec3 r_reflected;
 	Optics::Reflect(normalize(r_in.m_dir), rec.m_normal, r_reflected);
 	r_scattered = Ray(rec.m_position, r_reflected + m_data.m_fuzziness.x * Randomizer::RomdomInUnitSphere());
-	attenuation = DirectX::XMLoadFloat4(&m_data.m_albedo);
+	attenuation = m_albedo->Sample(rec.m_u, rec.m_v);
 	return (dot(r_scattered.m_dir, rec.m_normal) > 0); // absorb the scatter ray if it is below the surface
+}
+
+void Metal::ApplySRV(D3D12Viewer *viewer) const
+{
+	ID3D12GraphicsCommandList *commandList = viewer->GetGraphicsCommandList();
+	commandList->SetGraphicsRootDescriptorTable(3, m_albedo->m_d3dRes.m_SRVHandle);
 }
 
 Dielectric::Dielectric(float refractiveIndex)

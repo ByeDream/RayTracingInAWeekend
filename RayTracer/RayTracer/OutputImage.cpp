@@ -250,7 +250,7 @@ void OutputImage::BuildD3DRes(D3D12Viewer *viewer)
 		srvDesc.Format = textureDesc.Format;
 		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		srvDesc.Texture2D.MipLevels = 1;
-		viewer->GetDevice()->CreateShaderResourceView(m_resolveTargetTexture.Get(), &srvDesc, m_resolveTargetTextureSRVHeap->GetCPUDescriptorHandleForHeapStart());
+		device->CreateShaderResourceView(m_resolveTargetTexture.Get(), &srvDesc, m_resolveTargetTextureSRVHeap->GetCPUDescriptorHandleForHeapStart());
 	}
 	// Close the command list and execute it to begin the initial GPU setup.
 	viewer->ExecuteCommandList();

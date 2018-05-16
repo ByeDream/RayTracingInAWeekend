@@ -25,16 +25,16 @@ float4 PSMain(PSInput input) : SV_TARGET
 {
 	float specPow = 3; // hardcode the specular power for simplified modeling 
 	float3 diff_c = float3(1.0f, 1.0f, 1.0f);
-	float alpha = clamp(abs(g_refractiveIndex - 1.0f) * 1.6f, 0.0f, 1.0f);
+	float alpha = clamp(abs(g_refractiveIndex.x - 1.0f) * 1.6f, 0.0f, 1.0f);
 						// to fix the value after iterpolation
 	const float3 vN = normalize(input.normalV);
 	const float3 vT = normalize(input.tangentV.xyz - dot(input.tangentV.xyz, vN) * vN);
 	const float3 vB = input.tangentV.w * cross(vN, vT);
-	const float3 vL = normalize(g_lightDirV);
+	const float3 vL = normalize(g_lightDirV.xyz);
 	const float3 vV = normalize(float3(0, 0, 0) - input.positionV);
 
-	float3 vLightInts = g_lightIntensity * BRDF_ts_nphong_nofr(vN, vL, vV, diff_c, diff_c, specPow);
-	vLightInts += (diff_c * g_ambientIntensity);
+	float3 vLightInts = g_lightIntensity.rgb  * BRDF_ts_nphong_nofr(vN, vL, vV, diff_c, diff_c, specPow);
+	vLightInts += (diff_c * g_ambientIntensity.rgb);
 
 	// the gamma correction, to the approximation, use the power 1/gamma, and the gamma == 2, which is just square-root.
 	vLightInts = sqrt(vLightInts);

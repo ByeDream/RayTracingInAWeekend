@@ -60,6 +60,7 @@ private:
 	void									LoadMaterials();
 
 	std::vector<Mesh *>						m_meshes;
+	std::vector<ITexture2D *>				m_textures;
 	std::vector<IMaterial *>				m_materials;
 
 	// TODO : Do we need a separate render ?
@@ -68,7 +69,7 @@ private:
 	SimpleObjectBVHNode	*					m_objectBVHTree{ nullptr };
 	size_t									m_objectsCount{ 0 };
 
-	ComPtr<ID3D12DescriptorHeap>			m_CbvHeap;
+	ComPtr<ID3D12DescriptorHeap>			m_SRVHeap;
 	UINT32									m_CurrentCbvIndex;
 
 	////////////////////////
