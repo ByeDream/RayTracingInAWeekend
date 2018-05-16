@@ -105,6 +105,12 @@
     <ClInclude Include="SimpleTexture2D.h">
       <Filter>Source\3DScene</Filter>
     </ClInclude>
+    <ClInclude Include="FileIO.h">
+      <Filter>Source\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="tga_reader.h">
+      <Filter>Source\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracer.cpp">
@@ -157,6 +163,12 @@
     </ClCompile>
     <ClCompile Include="SimpleTexture2D.cpp">
       <Filter>Source\3DScene</Filter>
+    </ClCompile>
+    <ClCompile Include="FileIO.cpp">
+      <Filter>Source\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="tga_reader.cpp">
+      <Filter>Source\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

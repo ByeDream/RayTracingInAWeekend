@@ -34,10 +34,14 @@ float4 PSMain(PSInput input) : SV_TARGET
 	const float fDiff = saturate(dot(vL, vN));
 	float4 diff = g_albedoTexture.Sample(g_albedoSampler, input.uv);
 	float3 vLightInts = g_lightIntensity.rgb * diff.rgb * fDiff;
-	vLightInts += (diff.rgb * g_ambientIntensity);
+	vLightInts += (diff.rgb * g_ambientIntensity.rgb);
 
 	// the gamma correction, to the approximation, use the power 1/gamma, and the gamma == 2, which is just square-root.
 	vLightInts = sqrt(vLightInts);
-
+	
+	//float2 rg = input.uv;
+	//rg.r %= 1.0f;
+	//rg.g %= 1.0f;
+	//return float4(rg, 0.0f, 1.0f);
 	return float4(vLightInts, diff.a);
 }

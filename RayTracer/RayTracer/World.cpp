@@ -324,8 +324,11 @@ void World::LoadMaterials()
 	m_materials.push_back(material);
 
 	// MATERIAL_ID_LAMBERTIAN
-	texture = new SimpleTexture2D_SingleColor(Vec3(0.4f, 0.2f, 0.1f));
+	texture = new SimpleTexture2D_TGAImage("..\\Assets\\pab_ground_soil_001_c.tga");
 	m_textures.push_back(texture);
+
+	//texture = new SimpleTexture2D_SingleColor(Vec3(0.4f, 0.2f, 0.1f));
+	//m_textures.push_back(texture);
 	material = new Lambertian(texture);
 	m_materials.push_back(material);
 

@@ -59,13 +59,13 @@ void SphereHitable::CalculateUV(HitRecord &rec) const
 	Vec3 p = rec.m_position - m_center;
 	p.normalize();
 
-	//float theta = atan2(p.z(), p.x());
-	//float phi = asin(p.y());
+	float theta = atan2(p.z(), p.x());
+	float phi = asin(p.y());
 
 	// Sorry for trick code, but it is for matching with what we got from simple mesh builder, 
 	// still right hand, but +z faces up and +x faces left
-	float theta = atan2(p.y(), -p.x());
-	float phi = asin(-p.z());
+	//float theta = atan2(p.y(), -p.x());
+	//float phi = asin(-p.z());
 
 	rec.m_u = 1.0f - (theta + (float)M_PI) / (2.0f * (float)M_PI);
 	rec.m_v = (phi + (float)M_PI / 2.0f) / (float)M_PI;

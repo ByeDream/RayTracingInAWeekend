@@ -4,6 +4,9 @@
 #include "D3D12Viewer.h"
 #include "D3D12Helper.h"
 
+#include "FileIO.h"
+#include "tga_reader.h"
+
 void SimpleTexture2D::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &srvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &srvGPUHandle)
 {
 	ID3D12Device *device = viewer->GetDevice();
@@ -91,4 +94,52 @@ SimpleTexture2D_SingleColor::SimpleTexture2D_SingleColor(const Vec3 &col)
 			*(baseOffset + 3) = static_cast<UINT32>(a * 255.0f) & 0xFF;
 		}
 	}
+}
+
+SimpleTexture2D_SingleColor::~SimpleTexture2D_SingleColor()
+{
+	if (m_pixelData)
+	{
+		delete[] m_pixelData;
+		m_pixelData = nullptr;
+	}
+}
+
+SimpleTexture2D_TGAImage::SimpleTexture2D_TGAImage(const char *filePath)
+{
+	FileIO _file(filePath);
+	_file.Load();
+	
+	m_width = tgaGetWidth(_file.GetBuffer());
+	m_height = tgaGetHeight(_file.GetBuffer());
+
+	m_pixelData = (UINT8 *)tgaRead(_file.GetBuffer(), TGA_READER_ABGR);
+}
+
+SimpleTexture2D_TGAImage::~SimpleTexture2D_TGAImage()
+{
+	if (m_pixelData)
+	{
+		delete[] m_pixelData;
+		m_pixelData = nullptr;
+	}
+}
+
+Vec3 SimpleTexture2D_TGAImage::Sample(float u, float v) const
+{
+	UINT32 i = UINT32(u * m_width);
+	UINT32 j = UINT32((1.0f - v) * m_height - 0.001f);
+
+	if (i < 0) i = 0;
+	if (j < 0) j = 0;
+	if (i > m_width - 1) i = m_width - 1;
+	if (j > m_height - 1) j = m_height - 1;
+
+	UINT32 index =  j * m_width + i;
+
+	float r = m_pixelData[index * 4] / 255.0f;
+	float g = m_pixelData[index * 4 + 1] / 255.0f;
+	float b = m_pixelData[index * 4 + 2] / 255.0f;
+
+	return Vec3(r, g, b);
 }
