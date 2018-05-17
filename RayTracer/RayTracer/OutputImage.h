@@ -1,8 +1,9 @@
 #pragma once
 
+#include "D3D12Defines.h"
+
 struct Vec3;
 class D3D12Viewer;
-struct PipelineState;
 
 //RGBA8 bitmap
 class OutputImage
@@ -32,7 +33,7 @@ public:
 
 
 	// for output image resolving
-	PipelineState *								m_resolvePipelineState{ nullptr };
+	PipelineState								m_resolvePipelineState;
 	D3D12_VERTEX_BUFFER_VIEW					m_vertexBufferView;
 	ComPtr<ID3D12Resource>						m_vertexBuffer;
 	ComPtr<ID3D12Resource>						m_resolveTargetTexture;

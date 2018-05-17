@@ -167,13 +167,15 @@ Vec3 HomemadeRayTracer::Sample(const Ray &r, UINT32 depth) const
 		{
 			Vec3 attenuation;
 			Ray r_scattered;
-			if (depth < MAX_SAMPLE_DEPTH && rec.m_hitMaterial && rec.m_hitMaterial->Scatter(r, rec, attenuation, r_scattered))
+			Vec3 emmitted;
+			emmitted.zero();
+			if (depth < MAX_SAMPLE_DEPTH && rec.m_hitMaterial && rec.m_hitMaterial->Scatter(r, rec, attenuation, r_scattered, emmitted))
 			{
-				col = attenuation * Sample(r_scattered, depth + 1);
+				col = emmitted + attenuation * Sample(r_scattered, depth + 1);
 			}
 			else
 			{
-				col.zero();
+				col = emmitted;
 			}
 		}
 	}

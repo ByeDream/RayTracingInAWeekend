@@ -21,12 +21,6 @@ OutputImage::OutputImage(UINT32 width, UINT32 height, const char *name)
 
 OutputImage::~OutputImage()
 {
-	if (m_resolvePipelineState)
-	{
-		delete m_resolvePipelineState;
-		m_resolvePipelineState = nullptr;
-	}
-
 	if (m_data)
 	{
 		delete[] m_data;
@@ -112,8 +106,8 @@ void OutputImage::Resolve(D3D12Viewer *viewer)
 {
 	ID3D12GraphicsCommandList *commandList = viewer->GetGraphicsCommandList();
 	// Set necessary state.
-	commandList->SetPipelineState(m_resolvePipelineState->m_PSO.Get());
-	commandList->SetGraphicsRootSignature(m_resolvePipelineState->m_RS.Get());
+	commandList->SetPipelineState(m_resolvePipelineState.m_PSO.Get());
+	commandList->SetGraphicsRootSignature(m_resolvePipelineState.m_RS.Get());
 	ID3D12DescriptorHeap* ppHeaps[] = { m_resolveTargetTextureSRVHeap.Get() };
 	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
@@ -163,7 +157,7 @@ void OutputImage::BuildD3DRes(D3D12Viewer *viewer)
 		};
 		D3D12_INPUT_LAYOUT_DESC inputLayout{ inputElementDescs, _countof(inputElementDescs) };
 
-		m_resolvePipelineState = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\resloveImage.hlsl", L"..\\Assets\\resloveImage.hlsl", inputLayout, FALSE, FALSE, FALSE, FALSE);
+		viewer->CreatePipelineState(&m_resolvePipelineState, rootSignatureDesc, L"..\\Assets\\resloveImage.hlsl", L"..\\Assets\\resloveImage.hlsl", inputLayout, FALSE, FALSE, FALSE, FALSE);
 	}
 
 	// Create the vertex buffer of resolving draw.

@@ -49,9 +49,6 @@ void SimpleObjectSphere::Update(SimpleCamera *camera, float elapsedSeconds)
 
 	// Copy this matrix into the appropriate location in the geo constant buffer.
 	memcpy(m_d3dRes.m_pGeoConstants + m_d3dRes.m_GeoConstantBufferSize * m_world->GetFrameIndex(), &geoConstants, sizeof(GeometryConstants));
-
-	// copy material data into the appropriate location in the mtl constant buffer
-	memcpy(m_d3dRes.m_pMtlConstants + m_d3dRes.m_MtlConstantBufferSize * m_world->GetFrameIndex(), m_material->GetDataPtr(), m_material->GetDataSize());
 }
 
 void SimpleObjectSphere::Render(D3D12Viewer *viewer, UINT32 mid) const
@@ -61,10 +58,8 @@ void SimpleObjectSphere::Render(D3D12Viewer *viewer, UINT32 mid) const
 		ID3D12GraphicsCommandList *commandList = viewer->GetGraphicsCommandList();
 
 		m_material->ApplySRV(viewer);
-
+		m_material->ApplyCBV(viewer, m_world->GetIllumCbvHandle(m_world->GetFrameIndex()));
 		commandList->SetGraphicsRootDescriptorTable(0, m_d3dRes.m_GeoCbvHandles[m_world->GetFrameIndex()]);
-		commandList->SetGraphicsRootDescriptorTable(1, m_d3dRes.m_MtlCbvHandles[m_world->GetFrameIndex()]);
-		commandList->SetGraphicsRootDescriptorTable(2, m_world->GetIllumCbvHandle(m_world->GetFrameIndex()));
 
 		commandList->IASetPrimitiveTopology(ConvertPrimitiveType(m_mesh->m_primitiveType));
 		commandList->IASetIndexBuffer(&m_mesh->m_d3dRes.m_indexBufferView);
@@ -132,40 +127,6 @@ void SimpleObjectSphere::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR
 			cbvCPUHandle.Offset(handleOffset);
 		}
 	}
-
-	// mtl constant buffers.
-	{
-		m_d3dRes.m_MtlConstantBufferSize = (m_material->GetDataSize() + 255) & ~255;	// CB size is required to be 256-byte aligned.
-
-		// Create an upload heap for the mtl constant buffers.
-		ThrowIfFailed(device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(m_d3dRes.m_MtlConstantBufferSize * D3D12Viewer::FrameCount),
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&m_d3dRes.m_MtlConstantBuffer)));
-		m_d3dRes.m_MtlConstantBuffer->SetName(L"ObjMtlConstantBuffer");
-
-		CD3DX12_RANGE readRange(0, 0);		// We do not intend to read from this resource on the CPU.
-		ThrowIfFailed(m_d3dRes.m_MtlConstantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_d3dRes.m_pMtlConstants)));
-
-		// Create a CBV for each frame.
-		UINT64 cbOffset = 0;
-		m_d3dRes.m_MtlCbvHandles = new CD3DX12_GPU_DESCRIPTOR_HANDLE[D3D12Viewer::FrameCount];
-		for (UINT n = 0; n < D3D12Viewer::FrameCount; n++)
-		{
-			// Describe and create a constant buffer view (CBV).
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-			cbvDesc.BufferLocation = m_d3dRes.m_MtlConstantBuffer->GetGPUVirtualAddress() + cbOffset;
-			cbvDesc.SizeInBytes = m_d3dRes.m_MtlConstantBufferSize;
-			cbOffset += m_d3dRes.m_MtlConstantBufferSize;
-			device->CreateConstantBufferView(&cbvDesc, cbvCPUHandle);
-			m_d3dRes.m_MtlCbvHandles[n] = cbvGPUHandle;
-			cbvGPUHandle.Offset(handleOffset);
-			cbvCPUHandle.Offset(handleOffset);
-		}
-	}	
 }
 
 

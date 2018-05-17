@@ -9,11 +9,6 @@ struct PSInput
 	float2 uv			: TEXCOORD3;
 };
 
-cbuffer MaterialConstants : register(b1)
-{
-	float4 g_placeholder;
-};
-
 cbuffer IllumConstants : register(b2)
 {
 	float4 g_lightDirV;				// Light direction in view space.

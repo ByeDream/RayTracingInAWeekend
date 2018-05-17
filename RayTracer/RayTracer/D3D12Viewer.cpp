@@ -329,9 +329,8 @@ void D3D12Viewer::WaitForGpu()
 	m_fenceValues[m_frameIndex]++;
 }
 
-PipelineState * D3D12Viewer::CreatePipelineState(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &RSDesc, LPCWSTR VSFile, LPCWSTR PSFile, const D3D12_INPUT_LAYOUT_DESC &inputLayout, BOOL ccw, BOOL depthTest, BOOL depthWrite, BOOL alphaBlend)
+void D3D12Viewer::CreatePipelineState(PipelineState *pso, const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &RSDesc, LPCWSTR VSFile, LPCWSTR PSFile, const D3D12_INPUT_LAYOUT_DESC &inputLayout, BOOL ccw, BOOL depthTest, BOOL depthWrite, BOOL alphaBlend)
 {
-	PipelineState *pso = new PipelineState;
 	// Create the root signature.
 	ComPtr<ID3DBlob> signature;
 	ComPtr<ID3DBlob> error;
@@ -388,8 +387,6 @@ PipelineState * D3D12Viewer::CreatePipelineState(const CD3DX12_VERSIONED_ROOT_SI
 	psoDesc.SampleDesc.Quality = m_MsaaQuality - 1;
 	ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso->m_PSO)));
 	pso->m_RS->SetName(L"GraphicsPipelineState");
-
-	return pso;
 }
 
 BOOL D3D12Viewer::CreateAndUnloadBuffer(ComPtr<ID3D12Resource> &out_bufferHeap, ComPtr<ID3D12Resource> &out_uploadHeap, const void *initData, UINT32 bufferSize)

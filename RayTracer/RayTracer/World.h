@@ -7,7 +7,6 @@ class Mesh;
 class IMaterial;
 class Object;
 class D3D12Viewer;
-struct PipelineState;
 class SimpleCamera;
 class SimpleObjectBVHNode;
 
@@ -65,7 +64,6 @@ private:
 
 	// TODO : Do we need a separate render ?
 	// sort by materials to avoid pipeline state switching
-	PipelineState *							m_pipelineStates[MID_COUNT];
 	SimpleObjectBVHNode	*					m_objectBVHTree{ nullptr };
 	size_t									m_objectsCount{ 0 };
 

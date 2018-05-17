@@ -1,5 +1,7 @@
 #pragma once
 
+#include "D3D12Defines.h"
+
 class OutputImage;
 class InputListener;
 class HomemadeRayTracer;
@@ -18,13 +20,6 @@ const std::string D3D12ViewerModeNames[VMODE_COUNT] =
 {
 	"Scene Viewer",
 	"Image Viewer",
-};
-
-
-struct PipelineState
-{
-	ComPtr<ID3D12RootSignature>					m_RS;
-	ComPtr<ID3D12PipelineState>					m_PSO;
 };
 
 class D3D12Viewer
@@ -51,7 +46,8 @@ public:
 	inline UINT32								GetCurrentFrameIndex() const { return m_frameIndex; }
 	inline D3D12ViewerMode						GetMode() const { return m_mode; }
 
-	PipelineState *								CreatePipelineState(
+	void										CreatePipelineState(
+		PipelineState *pso,
 		const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &RSDesc, 
 		LPCWSTR VSFile, LPCWSTR PSFile, 
 		const D3D12_INPUT_LAYOUT_DESC &inputLayout, BOOL ccw,

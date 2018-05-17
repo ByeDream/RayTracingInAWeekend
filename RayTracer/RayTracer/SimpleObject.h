@@ -24,15 +24,9 @@ struct ObjectD3D12Resources
 	UINT32							m_GeoConstantBufferSize;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE *	m_GeoCbvHandles;
 
-	UINT8 *							m_pMtlConstants;
-	ComPtr<ID3D12Resource>			m_MtlConstantBuffer;
-	UINT32							m_MtlConstantBufferSize;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE *	m_MtlCbvHandles;
-
 	~ObjectD3D12Resources() 
 	{
 		delete[] m_GeoCbvHandles; 
-		delete[] m_MtlCbvHandles;
 	}
 };
 

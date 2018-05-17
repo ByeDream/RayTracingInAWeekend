@@ -69,9 +69,6 @@
     <ClInclude Include="SimpleCamera.h">
       <Filter>Source\3DScene</Filter>
     </ClInclude>
-    <ClInclude Include="Materials.h">
-      <Filter>Source\HMRayTracer</Filter>
-    </ClInclude>
     <ClInclude Include="Randomizer.h">
       <Filter>Source\Utils</Filter>
     </ClInclude>
@@ -111,6 +108,12 @@
     <ClInclude Include="tga_reader.h">
       <Filter>Source\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Materials.h">
+      <Filter>Source\3DScene</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Defines.h">
+      <Filter>Source\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracer.cpp">
@@ -140,9 +143,6 @@
     <ClCompile Include="SimpleCamera.cpp">
       <Filter>Source\3DScene</Filter>
     </ClCompile>
-    <ClCompile Include="Materials.cpp">
-      <Filter>Source\HMRayTracer</Filter>
-    </ClCompile>
     <ClCompile Include="World.cpp">
       <Filter>Source\3DScene</Filter>
     </ClCompile>
@@ -169,6 +169,9 @@
     </ClCompile>
     <ClCompile Include="tga_reader.cpp">
       <Filter>Source\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Materials.cpp">
+      <Filter>Source\3DScene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -198,6 +201,9 @@
       <Filter>Assets\Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Assets\sceneGeometry_vs.hlsl">
+      <Filter>Assets\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Assets\diffuseLight.hlsl">
       <Filter>Assets\Shaders</Filter>
     </FxCompile>
   </ItemGroup>

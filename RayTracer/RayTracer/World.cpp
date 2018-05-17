@@ -46,7 +46,7 @@ void World::ConstructWorld()
 				MaterialUniqueID materialID = MATERIAL_ID_DIELECTRIC;
 				if (chooseMat < 0.8f) 
 				{
-					//diffuse
+					//lambertian
 					materialID = (MaterialUniqueID)(UINT32)(MATERIAL_ID_RANDOM_LAMBERTIAN_START + Randomizer::RandomUNorm() * MATERIAL_ID_RANDOM_LAMBERTIAN_COUNT);
 				}
 				else if (chooseMat < 0.95)
@@ -69,16 +69,6 @@ void World::ConstructWorld()
 void World::DeconstructWorld()
 {
 	cout << "[World] DeconstructWorld" << endl;
-
-
-	for (auto i = 0; i < MID_COUNT; ++i)
-	{
-		if (m_pipelineStates[i])
-		{
-			delete m_pipelineStates[i];
-			m_pipelineStates[i] = nullptr;
-		}
-	}
 
 	if (m_objectBVHTree)
 	{
@@ -141,25 +131,32 @@ void World::OnRender(D3D12Viewer *viewer) const
 	ID3D12DescriptorHeap* ppHeaps[] = { m_SRVHeap.Get() };
 	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
-	for (UINT32 mid = 0; mid < MID_COUNT; ++mid)
-	{
-		commandList->SetPipelineState(m_pipelineStates[mid]->m_PSO.Get());
-		commandList->SetGraphicsRootSignature(m_pipelineStates[mid]->m_RS.Get());
-		m_objectBVHTree->Render(viewer, mid);
-	}
+	DiffuseLight::ApplyPSO(viewer);
+	m_objectBVHTree->Render(viewer, DiffuseLight::GetStaticID());
+
+	Lambertian::ApplyPSO(viewer);
+	m_objectBVHTree->Render(viewer, Lambertian::GetStaticID());
+
+	Metal::ApplyPSO(viewer);
+	m_objectBVHTree->Render(viewer, Metal::GetStaticID());
+
+	Dielectric::ApplyPSO(viewer);
+	m_objectBVHTree->Render(viewer, Dielectric::GetStaticID());
 }
 
 void World::BuildD3DRes(D3D12Viewer *viewer)
 {
-	for (auto i = m_meshes.begin(); i != m_meshes.end(); i++)
-	{
-		(*i)->BuildD3DRes(viewer);
-	}
-
 	{
 		// create SRV heap for textures and constant buffers
 		D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-		srvHeapDesc.NumDescriptors = D3D12Viewer::FrameCount * 2 * (UINT32)m_objectsCount + D3D12Viewer::FrameCount;  // Constants : big enough for use, FrameCount * geo + FrameCount *mtl per objects
+		// cbv :
+		// geo constants: frameCount * objectCount
+		srvHeapDesc.NumDescriptors = D3D12Viewer::FrameCount * (UINT32)m_objectsCount;
+		// mtl constants: materialCount
+		srvHeapDesc.NumDescriptors += (UINT32)m_materials.size();
+		// illum constants: frameCount
+		srvHeapDesc.NumDescriptors += D3D12Viewer::FrameCount;
+		// textures srv
 		srvHeapDesc.NumDescriptors += (UINT32)m_textures.size();
 		srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
@@ -220,63 +217,23 @@ void World::BuildD3DRes(D3D12Viewer *viewer)
 		{
 			(*i)->BuildD3DRes(viewer, CPUHandle, GPUHandle);
 		}
+
+		for (auto i = m_materials.begin(); i != m_materials.end(); i++)
+		{
+			(*i)->BuildD3DRes(viewer, CPUHandle, GPUHandle);
+		}
+
+		for (auto i = m_meshes.begin(); i != m_meshes.end(); i++)
+		{
+			(*i)->BuildD3DRes(viewer);
+		}
 	}
 
 	// create pso
-	D3D12_INPUT_LAYOUT_DESC inputLayout{ SimpleMesh::D3DVertexDeclaration, SimpleMesh::D3DVertexDeclarationElementCount };
-
-	{
-		CD3DX12_DESCRIPTOR_RANGE1 ranges[4];
-		ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-		ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-		ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-		ranges[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-
-		CD3DX12_ROOT_PARAMETER1 rootParameters[4];
-		rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_VERTEX);
-		rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_PIXEL);
-		rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_PIXEL);
-		rootParameters[3].InitAsDescriptorTable(1, &ranges[3], D3D12_SHADER_VISIBILITY_PIXEL);
-
-		D3D12_STATIC_SAMPLER_DESC sampler = {};
-		sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-		sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-		sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-		sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-		sampler.MipLODBias = 0;
-		sampler.MaxAnisotropy = 0;
-		sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-		sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-		sampler.MinLOD = 0.0f;
-		sampler.MaxLOD = D3D12_FLOAT32_MAX;
-		sampler.ShaderRegister = 0;
-		sampler.RegisterSpace = 0;
-		sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-		rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-		m_pipelineStates[MID_LAMBERTIAN] = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\lambertian.hlsl", inputLayout, TRUE, TRUE, TRUE, FALSE);
-
-		m_pipelineStates[MID_METAL] = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\metal.hlsl", inputLayout, TRUE, TRUE, TRUE, FALSE);
-	}
-
-	{
-		CD3DX12_DESCRIPTOR_RANGE1 ranges[3];
-		ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-		ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-		ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-
-		CD3DX12_ROOT_PARAMETER1 rootParameters[3];
-		rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_VERTEX);
-		rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_PIXEL);
-		rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_PIXEL);
-
-		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-		rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-		m_pipelineStates[MID_DIELECTRIC] = viewer->CreatePipelineState(rootSignatureDesc, L"..\\Assets\\sceneGeometry_vs.hlsl", L"..\\Assets\\dielectric.hlsl", inputLayout, TRUE, TRUE, FALSE, TRUE);
-	}
+	DiffuseLight::BuildPSO(viewer);
+	Lambertian::BuildPSO(viewer);
+	Metal::BuildPSO(viewer);
+	Dielectric::BuildPSO(viewer);
 }
 
 void World::LoadMeshes()
@@ -324,12 +281,13 @@ void World::LoadMaterials()
 	m_materials.push_back(material);
 
 	// MATERIAL_ID_LAMBERTIAN
-	texture = new SimpleTexture2D_TGAImage("..\\Assets\\pab_ground_soil_001_c.tga");
-	m_textures.push_back(texture);
+	//texture = new SimpleTexture2D_TGAImage("..\\Assets\\pab_ground_soil_001_c.tga");
+	//m_textures.push_back(texture);
 
 	//texture = new SimpleTexture2D_SingleColor(Vec3(0.4f, 0.2f, 0.1f));
 	//m_textures.push_back(texture);
-	material = new Lambertian(texture);
+	//material = new Lambertian(texture);
+	material = new DiffuseLight(Vec3(4.0f, 4.0f, 4.0f));
 	m_materials.push_back(material);
 
 	// MATERIAL_ID_METAL
