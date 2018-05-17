@@ -78,7 +78,8 @@ void OutputImage::Render(const Vec3 *pixels, UINT32 pixelCount)
 		for (UINT32 i = 0; i < m_width; i++)
 		{
 			UINT32 index = j * m_width + i;
-			const Vec3 &col = pixels[index];
+			Vec3 col = pixels[index];
+			col.clamp(Vec3(0.0f, 0.0f, 0.0f), Vec3(1.0f, 1.0f, 1.0f));
 			float a = 1.0f;
 
 			UINT8 *baseOffset = m_data + index * m_pixelSizeInByte;
