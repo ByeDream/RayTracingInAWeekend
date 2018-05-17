@@ -12,13 +12,11 @@
 
 using namespace std;
 
-const Vec3 World::SkyLight(0.5f, 0.7f, 1.0f);
-
-const float World::SkyLightBlender = 0.3f;
-
 void World::ConstructWorld()
 {
 	cout << "[World] ConstructWorld" << endl;
+
+	m_ambientLight = Vec3(0.85f, 0.9f, 1.0f);
 
 	LoadMeshes();
 	LoadMaterials();
@@ -113,12 +111,10 @@ void World::OnUpdate(SimpleCamera *camera, float elapsedSeconds)
 	XMVECTOR lightDirWorld = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);  // sun light
 	XMVECTOR lightDirView = DirectX::XMVector4Transform(lightDirWorld, camera->GetViewMatrix());
 
-	Vec3 ambient = (1.0f - SkyLightBlender) * Vec3(1.0f, 1.0f, 1.0f) + SkyLightBlender * SkyLight;
-
 	IllumConstants constants;
 	DirectX::XMStoreFloat4(&constants.lightDirV, lightDirView);
-	DirectX::XMStoreFloat4(&constants.lightIntensity, (SkyLight * lightIntensityScale).m_simd);
-	DirectX::XMStoreFloat4(&constants.ambientIntensity, (ambient * ambientIntensityScale).m_simd);
+	DirectX::XMStoreFloat4(&constants.lightIntensity, (m_ambientLight * lightIntensityScale).m_simd);
+	DirectX::XMStoreFloat4(&constants.ambientIntensity, (m_ambientLight * ambientIntensityScale).m_simd);
 	memcpy(m_pIllumConstants + m_IllumConstantBufferSize * m_CurrentCbvIndex, &constants, sizeof(IllumConstants));
 	////////////////////////
 

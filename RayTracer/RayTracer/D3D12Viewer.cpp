@@ -503,8 +503,9 @@ void D3D12Viewer::BeginBackSurface(BOOL clear)
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
 		m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
-		Vec3 ambient = (1.0f - World::SkyLightBlender) * Vec3(1.0f, 1.0f, 1.0f) + World::SkyLightBlender * World::SkyLight;
-		const float clearColor[] = { ambient.r(), ambient.g(), ambient.b(), 1.0f };
+		const Vec3 &ambient = m_world->GetAmbientLight();
+		// the gamma correction, to the approximation, use the power 1/gamma, and the gamma == 2, which is just square-root.
+		const float clearColor[] = { sqrt(ambient.r()), sqrt(ambient.g()), sqrt(ambient.b()), 1.0f };
 		m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 		m_commandList->ClearDepthStencilView(m_dsvHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	}

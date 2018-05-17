@@ -52,8 +52,9 @@ public:
 
 	inline UINT32							GetFrameIndex() const { return m_CurrentCbvIndex; }
 
-	static const Vec3						SkyLight;
-	static const float						SkyLightBlender;
+
+	inline const Vec3 &						GetAmbientLight() const { return m_ambientLight; }
+
 private:
 	void									LoadMeshes();
 	void									LoadMaterials();
@@ -69,6 +70,8 @@ private:
 
 	ComPtr<ID3D12DescriptorHeap>			m_SRVHeap;
 	UINT32									m_CurrentCbvIndex;
+
+	Vec3									m_ambientLight;
 
 	////////////////////////
 	// TODO Light, put them here at the moment
