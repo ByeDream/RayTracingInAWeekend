@@ -21,7 +21,7 @@ float4 PSMain(PSInput input) : SV_TARGET
 	for (int i = 0; i < lightSourceCount; ++i)
 	{
 		float3 vL = g_lightSourceConstants[i].lightPositionView.xyz - input.positionV;
-		float3 lightCol = g_lightSourceConstants[0].lightIntensity.rgb;
+		float3 lightCol = g_lightSourceConstants[i].lightIntensity.rgb;
 		float d = length(vL); vL = normalize(vL);
 		float4 lightAtten = g_lightSourceConstants[i].lightAttenuation;
 		float attenuation = saturate(1.0f / (lightAtten.x + lightAtten.y * d + lightAtten.z * d * d) - lightAtten.w);

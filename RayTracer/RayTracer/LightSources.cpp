@@ -8,8 +8,8 @@
 #include "D3D12Helper.h"
 #include "std_cbuffer.h"
 
-#define AMBIENT_INTENSITY_ATTENUATION 0.4f // to simulate global attenuation of indirect light
-#define LIGHT_INTENSITY_SCALE 0.25f // as we use diffierent unit definition
+#define AMBIENT_INTENSITY_ATTENUATION 0.8f // to simulate global attenuation of indirect light
+#define LIGHT_INTENSITY_SCALE 0.5f // as we use diffierent unit definition
 
 LightSources::LightSources(World *world, std::vector<Object *> &objects, const Vec3 &ambientLight)
 	: m_world(world)
@@ -26,6 +26,7 @@ LightSources::LightSources(World *world, std::vector<Object *> &objects, const V
 	}
 
 	m_lightSourceCount = (UINT32)m_lightSources.size();
+	m_lightSourceCountX = m_lightSourceCount == 0 ? 1 : m_lightSourceCount; // for constant we atlease keep 1 to matching with shader sig.
 }
 
 LightSources::~LightSources()
@@ -88,12 +89,12 @@ void LightSources::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDL
 
 	m_lightSourceConstantBufferSize = (sizeof(LightSourceConstants) + 255) & ~255;
 
-	if (m_lightSourceCount > 0)
+	//if (m_lightSourceCount > 0)
 	{
 		ThrowIfFailed(device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(m_lightSourceConstantBufferSize * m_lightSourceCount * D3D12Viewer::FrameCount),
+			&CD3DX12_RESOURCE_DESC::Buffer(m_lightSourceConstantBufferSize * m_lightSourceCountX * D3D12Viewer::FrameCount),
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&m_lightSourceConstantBuffer)));
@@ -119,8 +120,8 @@ void LightSources::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDL
 			cbvCPUHandle.Offset(handleOffset);
 		}
 
-		UINT64 cbOffset1 = n * m_lightSourceConstantBufferSize * m_lightSourceCount;
-		for (UINT32 l = 0; l < m_lightSourceCount; ++l)
+		UINT64 cbOffset1 = n * m_lightSourceConstantBufferSize * m_lightSourceCountX;
+		for (UINT32 l = 0; l < m_lightSourceCountX; ++l)
 		{
 			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
 			cbvDesc.BufferLocation = m_lightSourceConstantBuffer->GetGPUVirtualAddress() + cbOffset1;

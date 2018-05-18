@@ -47,7 +47,7 @@ void World::ConstructWorld()
 					//lambertian
 					materialID = (MaterialUniqueID)(UINT32)(MATERIAL_ID_RANDOM_LAMBERTIAN_START + Randomizer::RandomUNorm() * MATERIAL_ID_RANDOM_LAMBERTIAN_COUNT);
 				}
-				else if (chooseMat < 0.95)
+				else if (chooseMat < 0.95f)
 				{
 					// metal
 					materialID = (MaterialUniqueID)(UINT32)(MATERIAL_ID_RANDOM_METAL_START + Randomizer::RandomUNorm() * MATERIAL_ID_RANDOM_METAL_COUNT);
@@ -60,8 +60,8 @@ void World::ConstructWorld()
 #endif
 
 
-	//m_lightSources = new LightSources(objects, Vec3(0.85f, 0.9f, 1.0f));
-	m_lightSources = new LightSources(this, objects, Vec3(0.0f, 0.0f, 0.0f));
+	m_lightSources = new LightSources(this, objects, Vec3(0.85f, 0.9f, 1.0f));
+	//m_lightSources = new LightSources(this, objects, Vec3(0.0f, 0.0f, 0.0f));
 
 	m_objectsCount = objects.size();
 	m_objectBVHTree = new SimpleObjectBVHNode(objects);
@@ -238,16 +238,17 @@ void World::LoadMaterials()
 	//texture = new SimpleTexture2D_TGAImage("..\\Assets\\pab_ground_soil_001_c.tga");
 	//m_textures.push_back(texture);
 
-	//texture = new SimpleTexture2D_SingleColor(Vec3(0.4f, 0.2f, 0.1f));
-	//m_textures.push_back(texture);
-	//material = new Lambertian(texture);
-	material = new DiffuseLight(Vec3(4.0f, 4.0f, 4.0f));
+	texture = new SimpleTexture2D_SingleColor(Vec3(0.4f, 0.2f, 0.1f));
+	m_textures.push_back(texture);
+	material = new Lambertian(texture);
+	//material = new DiffuseLight(Vec3(4.0f, 4.0f, 4.0f));
 	m_materials.push_back(material);
 
 	// MATERIAL_ID_METAL
 	texture = new SimpleTexture2D_SingleColor(Vec3(0.7f, 0.6f, 0.5f));
 	m_textures.push_back(texture);
 	material = new Metal(texture, 0.0f);
+
 	m_materials.push_back(material);
 
 	// MATERIAL_ID_DIELECTRIC

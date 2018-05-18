@@ -9,8 +9,8 @@ ConstantBuffer<LightSourceConstants> g_lightSourceConstants[] : register(b1, spa
 
 float4 PSMain(PSInput input) : SV_TARGET
 {
-	float specPow = 3; // hardcode the specular power for simplified modeling 
-	float alpha = saturate(abs(g_mtlConstants.refractiveIndex.x - 1.0f) * 1.6f);
+	float specPow = 32; // hardcode the specular power for simplified modeling 
+	float alpha = saturate(abs(g_mtlConstants.refractiveIndex.x - 1.0f));
 
 	float3 ambientRgb = g_illumGlobalConstants.ambientIntensity.rgb;
 	int lightSourceCount = g_illumGlobalConstants.lightSourceCount.x;
@@ -26,7 +26,7 @@ float4 PSMain(PSInput input) : SV_TARGET
 	for (int i = 0; i < lightSourceCount; ++i)
 	{
 		float3 vL = g_lightSourceConstants[i].lightPositionView.xyz - input.positionV;
-		float3 lightCol = g_lightSourceConstants[0].lightIntensity.rgb;
+		float3 lightCol = g_lightSourceConstants[i].lightIntensity.rgb;
 		float d = length(vL); vL = normalize(vL);
 		float4 lightAtten = g_lightSourceConstants[i].lightAttenuation;
 		float attenuation = saturate(1.0f / (lightAtten.x + lightAtten.y * d + lightAtten.z * d * d) - lightAtten.w);
