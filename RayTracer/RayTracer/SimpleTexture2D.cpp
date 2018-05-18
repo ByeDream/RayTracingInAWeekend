@@ -77,6 +77,8 @@ void SimpleTexture2D::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HA
 SimpleTexture2D_SingleColor::SimpleTexture2D_SingleColor(const Vec3 &col)
 	: m_color(col)
 {
+	Vec3 _col = col;
+	_col.clamp(Vec3(0.0f, 0.0f, 0.0f), Vec3(1.0f, 1.0f, 1.0f));
 	m_width = m_height = 4;
 	m_pixelData = new UINT8[m_width * m_height * 4];
 
@@ -88,9 +90,9 @@ SimpleTexture2D_SingleColor::SimpleTexture2D_SingleColor(const Vec3 &col)
 			float a = 1.0f;
 
 			UINT8 *baseOffset = m_pixelData + index * 4;
-			*baseOffset = static_cast<UINT32>(col.r() * 255.0f) & 0xFF;
-			*(baseOffset + 1) = static_cast<UINT32>(col.g() * 255.0f) & 0xFF;
-			*(baseOffset + 2) = static_cast<UINT32>(col.b() * 255.0f) & 0xFF;
+			*baseOffset = static_cast<UINT32>(_col.r() * 255.0f) & 0xFF;
+			*(baseOffset + 1) = static_cast<UINT32>(_col.g() * 255.0f) & 0xFF;
+			*(baseOffset + 2) = static_cast<UINT32>(_col.b() * 255.0f) & 0xFF;
 			*(baseOffset + 3) = static_cast<UINT32>(a * 255.0f) & 0xFF;
 		}
 	}
