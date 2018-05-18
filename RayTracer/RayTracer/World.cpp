@@ -16,7 +16,8 @@ void World::ConstructWorld()
 {
 	cout << "[World] ConstructWorld" << endl;
 
-	m_ambientLight = Vec3(0.85f, 0.9f, 1.0f);
+	//m_ambientLight = Vec3(0.85f, 0.9f, 1.0f);
+	m_ambientLight = Vec3(0.0f, 0.0f, 0.0f);
 
 	LoadMeshes();
 	LoadMaterials();
@@ -58,6 +59,16 @@ void World::ConstructWorld()
 		}
 	}
 #endif
+
+	// count light sources, TODO for other kinds of light
+	for (auto i = objects.begin(); i != objects.end(); ++i)
+	{
+		IMaterial *mtl = (*i)->m_material;
+		if (mtl && mtl->GetID() == MID_DIFFUSE_LIGHT)
+		{
+			m_lightSources.push_back(*i);
+		}
+	}
 
 	m_objectsCount = objects.size();
 	m_objectBVHTree = new SimpleObjectBVHNode(objects);
@@ -108,14 +119,29 @@ void World::OnUpdate(SimpleCamera *camera, float elapsedSeconds)
 	const float lightIntensityScale = 0.6f;  // cloudy sky
 	const float ambientIntensityScale = 0.4f;	// cloudy sky
 
-	XMVECTOR lightDirWorld = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);  // sun light
-	XMVECTOR lightDirView = DirectX::XMVector4Transform(lightDirWorld, camera->GetViewMatrix());
+	//XMVECTOR lightDirWorld = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);  // sun light
+	//XMVECTOR lightDirView = DirectX::XMVector4Transform(lightDirWorld, camera->GetViewMatrix());
 
-	IllumConstants constants;
-	DirectX::XMStoreFloat4(&constants.lightDirV, lightDirView);
-	DirectX::XMStoreFloat4(&constants.lightIntensity, (m_ambientLight * lightIntensityScale).m_simd);
-	DirectX::XMStoreFloat4(&constants.ambientIntensity, (m_ambientLight * ambientIntensityScale).m_simd);
-	memcpy(m_pIllumConstants + m_IllumConstantBufferSize * m_CurrentCbvIndex, &constants, sizeof(IllumConstants));
+	IllumGlobalConstants globalConstants;
+	DirectX::XMStoreFloat4(&globalConstants.ambientIntensity, (m_ambientLight * ambientIntensityScale).m_simd);
+	globalConstants.lightSourceCount.x = (float)m_lightSources.size();
+	memcpy(m_pIllumGlobalConstants + m_illumGlobalConstantBufferSize * m_CurrentCbvIndex, &globalConstants, sizeof(IllumGlobalConstants));
+
+	LightSourceConstants lightConstants;
+	for (auto i = 0; i < m_lightSources.size(); ++i)
+	{
+		const Object *lightSource = m_lightSources[i];
+		const DiffuseLight *lightMtl = reinterpret_cast<const DiffuseLight *>(lightSource->m_material);
+		
+		XMVECTOR lightPosWorld = DirectX::XMVectorSet(lightSource->m_position.x(), lightSource->m_position.y(), lightSource->m_position.z(), 1.0f);
+		XMVECTOR lightPosView = DirectX::XMVector4Transform(lightPosWorld, camera->GetViewMatrix());
+
+		DirectX::XMStoreFloat4(&lightConstants.lightPositionView, lightPosView);
+		lightConstants.lightIntensity = lightMtl->m_data.m_intensity;
+		lightConstants.lightAttenuation = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f); // TODO
+		auto index = m_CurrentCbvIndex * m_lightSources.size() + i;
+		memcpy(m_pLightSourceConstants + m_lightSourceConstantBufferSize * index, &lightConstants, sizeof(LightSourceConstants));
+	}
 	////////////////////////
 
 	m_objectBVHTree->Update(camera, elapsedSeconds);
@@ -142,7 +168,10 @@ void World::OnRender(D3D12Viewer *viewer) const
 
 void World::BuildD3DRes(D3D12Viewer *viewer)
 {
+	ID3D12Device *device = viewer->GetDevice();
 	{
+		UINT32 handleOffset = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
 		// create SRV heap for textures and constant buffers
 		D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
 		// cbv :
@@ -150,8 +179,8 @@ void World::BuildD3DRes(D3D12Viewer *viewer)
 		srvHeapDesc.NumDescriptors = D3D12Viewer::FrameCount * (UINT32)m_objectsCount;
 		// mtl constants: materialCount
 		srvHeapDesc.NumDescriptors += (UINT32)m_materials.size();
-		// illum constants: frameCount
-		srvHeapDesc.NumDescriptors += D3D12Viewer::FrameCount;
+		// illum constants: frameCount * (1 + lightSourceCount)
+		srvHeapDesc.NumDescriptors += D3D12Viewer::FrameCount * (1 + (UINT32)m_lightSources.size());
 		// textures srv
 		srvHeapDesc.NumDescriptors += (UINT32)m_textures.size();
 		srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -164,50 +193,66 @@ void World::BuildD3DRes(D3D12Viewer *viewer)
 
 		m_objectBVHTree->BuildD3DRes(viewer, CPUHandle, GPUHandle);
 
-		////////////////////////
-		// TODO Light, put them here at the moment
+
 		// illum constants
 		{
-			ID3D12Device *device = viewer->GetDevice();
-			UINT32 handleOffset = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+			m_illumGlobalConstantBufferSize = (sizeof(IllumGlobalConstants) + 255) & ~255;
 
-			m_IllumConstantBufferSize = (sizeof(IllumConstants) + 255) & ~255;	// CB size is required to be 256-byte aligned.
-
-																				// Create an upload heap for the Illum constant buffers.
 			ThrowIfFailed(device->CreateCommittedResource(
 				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(m_IllumConstantBufferSize * D3D12Viewer::FrameCount),
+				&CD3DX12_RESOURCE_DESC::Buffer(m_illumGlobalConstantBufferSize * D3D12Viewer::FrameCount),
 				D3D12_RESOURCE_STATE_GENERIC_READ,
 				nullptr,
-				IID_PPV_ARGS(&m_IllumConstantBuffer)));
-			NAME_D3D12_OBJECT(m_IllumConstantBuffer);
+				IID_PPV_ARGS(&m_illumGlobalConstantBuffer)));
+			NAME_D3D12_OBJECT(m_illumGlobalConstantBuffer);
 
-			// Map the constant buffers. Note that unlike D3D11, the resource 
-			// does not need to be unmapped for use by the GPU. In this sample, 
-			// the resource stays 'permenantly' mapped to avoid overhead with 
-			// mapping/unmapping each frame.
 			CD3DX12_RANGE readRange(0, 0);		// We do not intend to read from this resource on the CPU.
-			ThrowIfFailed(m_IllumConstantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_pIllumConstants)));
+			ThrowIfFailed(m_illumGlobalConstantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_pIllumGlobalConstants)));
+
+			m_lightSourceConstantBufferSize = (sizeof(LightSourceConstants) + 255) & ~255;
+
+			ThrowIfFailed(device->CreateCommittedResource(
+				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+				D3D12_HEAP_FLAG_NONE,
+				&CD3DX12_RESOURCE_DESC::Buffer(m_lightSourceConstantBufferSize * m_lightSources.size() * D3D12Viewer::FrameCount),
+				D3D12_RESOURCE_STATE_GENERIC_READ,
+				nullptr,
+				IID_PPV_ARGS(&m_lightSourceConstantBuffer)));
+			NAME_D3D12_OBJECT(m_lightSourceConstantBuffer);
+
+			ThrowIfFailed(m_lightSourceConstantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_pLightSourceConstants)));
 
 			// Create a CBV for each frame.
-			UINT64 cbOffset = 0;
-			m_IllumCbvHandles = new CD3DX12_GPU_DESCRIPTOR_HANDLE[D3D12Viewer::FrameCount];  // Note leak at rge moment!
-			for (UINT n = 0; n < D3D12Viewer::FrameCount; n++)
+			UINT64 cbOffset0 = 0;
+			m_IllumCbvHandles = new CD3DX12_GPU_DESCRIPTOR_HANDLE[D3D12Viewer::FrameCount];  // Note leak at the moment!
+			for (auto n = 0; n < D3D12Viewer::FrameCount; n++)
 			{
 				// Describe and create a constant buffer view (CBV).
-				D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-				cbvDesc.BufferLocation = m_IllumConstantBuffer->GetGPUVirtualAddress() + cbOffset;
-				cbvDesc.SizeInBytes = m_IllumConstantBufferSize;
-				cbOffset += m_IllumConstantBufferSize;
-				device->CreateConstantBufferView(&cbvDesc, CPUHandle);
-				m_IllumCbvHandles[n] = GPUHandle;
-				GPUHandle.Offset(handleOffset);
-				CPUHandle.Offset(handleOffset);
+				{
+					D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+					cbvDesc.BufferLocation = m_illumGlobalConstantBuffer->GetGPUVirtualAddress() + cbOffset0;
+					cbvDesc.SizeInBytes = m_illumGlobalConstantBufferSize;
+					cbOffset0 += m_illumGlobalConstantBufferSize;
+					device->CreateConstantBufferView(&cbvDesc, CPUHandle);
+					m_IllumCbvHandles[n] = GPUHandle;
+					GPUHandle.Offset(handleOffset);
+					CPUHandle.Offset(handleOffset);
+				}
+
+				UINT64 cbOffset1 = n * m_lightSourceConstantBufferSize * m_lightSources.size();
+				for (auto l = 0; l < m_lightSources.size(); ++l)
+				{
+					D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+					cbvDesc.BufferLocation = m_lightSourceConstantBuffer->GetGPUVirtualAddress() + cbOffset1;
+					cbvDesc.SizeInBytes = m_lightSourceConstantBufferSize;
+					cbOffset1 += m_lightSourceConstantBufferSize;
+					device->CreateConstantBufferView(&cbvDesc, CPUHandle);
+					GPUHandle.Offset(handleOffset);
+					CPUHandle.Offset(handleOffset);
+				}
 			}
 		}
-		////////////////////////
-
 
 		for (auto i = m_textures.begin(); i != m_textures.end(); i++)
 		{
@@ -227,7 +272,7 @@ void World::BuildD3DRes(D3D12Viewer *viewer)
 
 	// create pso
 	DiffuseLight::BuildPSO(viewer);
-	Lambertian::BuildPSO(viewer);
+	Lambertian::BuildPSO(viewer, (UINT32)m_lightSources.size());
 	Metal::BuildPSO(viewer);
 	Dielectric::BuildPSO(viewer);
 }

@@ -46,13 +46,13 @@ void Lambertian::ApplyCBV(D3D12Viewer *viewer, D3D12_GPU_DESCRIPTOR_HANDLE illum
 
 PipelineState Lambertian::s_pso;
 
-void Lambertian::BuildPSO(D3D12Viewer *viewer)
+void Lambertian::BuildPSO(D3D12Viewer *viewer, UINT32 lightSourceCount)
 {
 	D3D12_INPUT_LAYOUT_DESC inputLayout{ SimpleMesh::D3DVertexDeclaration, SimpleMesh::D3DVertexDeclarationElementCount };
 
 	CD3DX12_DESCRIPTOR_RANGE1 ranges[3];
 	ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-	ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+	ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1 + lightSourceCount, 0, 1, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 	ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[3];

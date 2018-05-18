@@ -54,7 +54,7 @@ public:
 	virtual void ApplyCBV(D3D12Viewer *viewer, D3D12_GPU_DESCRIPTOR_HANDLE illumCbvHandle) const override;
 
 	static PipelineState s_pso;
-	static void BuildPSO(D3D12Viewer *viewer);
+	static void BuildPSO(D3D12Viewer *viewer, UINT32 lightSourceCount);
 	static void ApplyPSO(D3D12Viewer *viewer);
 	static MaterialID GetStaticID() { return MID_LAMBERTIAN; }
 };

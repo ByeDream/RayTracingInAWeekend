@@ -72,20 +72,20 @@ private:
 	UINT32									m_CurrentCbvIndex;
 
 	Vec3									m_ambientLight;
+	std::vector<Object *>					m_lightSources;
 
 	////////////////////////
 	// TODO Light, put them here at the moment
 	// Only one direction light
-	struct IllumConstants
-	{
-		XMFLOAT4	lightDirV;				// Light direction in view space.
-		XMFLOAT4	lightIntensity;
-		XMFLOAT4	ambientIntensity;
-	};
 
-	UINT8 *									m_pIllumConstants;
-	ComPtr<ID3D12Resource>					m_IllumConstantBuffer;
-	UINT32									m_IllumConstantBufferSize;
+	UINT8 *									m_pIllumGlobalConstants;
+	ComPtr<ID3D12Resource>					m_illumGlobalConstantBuffer;
+	UINT32									m_illumGlobalConstantBufferSize;
+
+	UINT8 *									m_pLightSourceConstants;
+	ComPtr<ID3D12Resource>					m_lightSourceConstantBuffer;
+	UINT32									m_lightSourceConstantBufferSize;
+
 	CD3DX12_GPU_DESCRIPTOR_HANDLE *			m_IllumCbvHandles;
 public:
 	D3D12_GPU_DESCRIPTOR_HANDLE				GetIllumCbvHandle(UINT32 index) {

@@ -349,8 +349,8 @@ void D3D12Viewer::CreatePipelineState(PipelineState *pso, const CD3DX12_VERSIONE
 	UINT compileFlags = 0;
 #endif
 
-	ThrowIfFailed(D3DCompileFromFile(VSFile, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
-	ThrowIfFailed(D3DCompileFromFile(PSFile, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
+	ThrowIfFailed(D3DCompileFromFile(VSFile, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &vertexShader, nullptr));
+	ThrowIfFailed(D3DCompileFromFile(PSFile, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &pixelShader, nullptr));
 
 		
 	// Describe and create the graphics pipeline state object (PSO).
