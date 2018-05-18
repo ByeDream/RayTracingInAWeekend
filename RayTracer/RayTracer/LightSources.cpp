@@ -9,6 +9,7 @@
 #include "std_cbuffer.h"
 
 #define AMBIENT_INTENSITY_ATTENUATION 0.4f // to simulate global attenuation of indirect light
+#define LIGHT_INTENSITY_SCALE 0.25f // as we use diffierent unit definition
 
 LightSources::LightSources(World *world, std::vector<Object *> &objects, const Vec3 &ambientLight)
 	: m_world(world)
@@ -53,8 +54,8 @@ void LightSources::Update(SimpleCamera *camera, float elapsedSeconds)
 		XMVECTOR lightPosView = DirectX::XMVector4Transform(lightPosWorld, camera->GetViewMatrix());
 
 		DirectX::XMStoreFloat4(&lightConstants.lightPositionView, lightPosView);
-		lightConstants.lightIntensity = lightMtl->m_data.intensity;
-		lightConstants.lightAttenuation = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f); // TBD
+		lightConstants.lightIntensity = XMFLOAT4(lightMtl->m_data.intensity.x * LIGHT_INTENSITY_SCALE, lightMtl->m_data.intensity.y * LIGHT_INTENSITY_SCALE, lightMtl->m_data.intensity.z * LIGHT_INTENSITY_SCALE, 0.0f);
+		lightConstants.lightAttenuation = XMFLOAT4(0.0f, 0.0f, 1.0f, 0.0f); // TBD
 		UINT32 index = m_world->GetFrameIndex() * m_lightSourceCount + i;
 		memcpy(m_pLightSourceConstants + m_lightSourceConstantBufferSize * index, &lightConstants, sizeof(LightSourceConstants));
 	}

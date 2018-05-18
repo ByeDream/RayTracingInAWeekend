@@ -12,7 +12,7 @@ SamplerState g_albedoSampler : register(s0);
 
 float4 PSMain(PSInput input) : SV_TARGET
 {
-	float specPow = 16; // hardcode the specular power for simplified modeling 
+	float specPow = 32; // hardcode the specular power for simplified modeling 
 	float n = (1.0f - g_mtlConstants.fuzziness.x) * specPow;
 
 	float3 ambientRgb = g_illumGlobalConstants.ambientIntensity.rgb;
