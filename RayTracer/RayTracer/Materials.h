@@ -82,7 +82,7 @@ public:
 	virtual const void * GetDataPtr() const override { return &m_data; }
 
 	static PipelineState s_pso;
-	static void BuildPSO(D3D12Viewer *viewer);
+	static void BuildPSO(D3D12Viewer *viewer, UINT32 lightSourceCount);
 	static void ApplyPSO(D3D12Viewer *viewer);
 	static MaterialID GetStaticID() { return MID_METAL; }
 };
@@ -106,7 +106,7 @@ public:
 	virtual const void * GetDataPtr() const override { return &m_data; }
 
 	static PipelineState s_pso;
-	static void BuildPSO(D3D12Viewer *viewer);
+	static void BuildPSO(D3D12Viewer *viewer, UINT32 lightSourceCount);
 	static void ApplyPSO(D3D12Viewer *viewer);
 	static MaterialID GetStaticID() { return MID_DIELECTRIC; }
 };

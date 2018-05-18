@@ -1,14 +1,12 @@
 #pragma once
 
-#include "Vec3.h"
-#include "Materials.h"
-
 class Mesh;
 class IMaterial;
-class Object;
+class ITexture2D;
 class D3D12Viewer;
 class SimpleCamera;
 class SimpleObjectBVHNode;
+class LightSources;
 
 enum MeshUniqueID
 {
@@ -51,9 +49,7 @@ public:
 	SimpleObjectBVHNode	*					GetObjectBVHTree() const { return m_objectBVHTree; }
 
 	inline UINT32							GetFrameIndex() const { return m_CurrentCbvIndex; }
-
-
-	inline const Vec3 &						GetAmbientLight() const { return m_ambientLight; }
+	inline LightSources *					GetLightSources() const { return m_lightSources; }
 
 private:
 	void									LoadMeshes();
@@ -71,25 +67,5 @@ private:
 	ComPtr<ID3D12DescriptorHeap>			m_SRVHeap;
 	UINT32									m_CurrentCbvIndex;
 
-	Vec3									m_ambientLight;
-	std::vector<Object *>					m_lightSources;
-
-	////////////////////////
-	// TODO Light, put them here at the moment
-	// Only one direction light
-
-	UINT8 *									m_pIllumGlobalConstants;
-	ComPtr<ID3D12Resource>					m_illumGlobalConstantBuffer;
-	UINT32									m_illumGlobalConstantBufferSize;
-
-	UINT8 *									m_pLightSourceConstants;
-	ComPtr<ID3D12Resource>					m_lightSourceConstantBuffer;
-	UINT32									m_lightSourceConstantBufferSize;
-
-	CD3DX12_GPU_DESCRIPTOR_HANDLE *			m_IllumCbvHandles;
-public:
-	D3D12_GPU_DESCRIPTOR_HANDLE				GetIllumCbvHandle(UINT32 index) {
-		return m_IllumCbvHandles[index];
-	}
-	////////////////////////
+	LightSources *							m_lightSources;
 };

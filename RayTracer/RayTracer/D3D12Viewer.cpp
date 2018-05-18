@@ -5,6 +5,7 @@
 #include "HomemadeRayTracer.h"
 #include "World.h"
 #include "D3D12Helper.h"
+#include "LightSources.h"
 
 #define MSAA_SAMPLE_COUNT 1 // disable mass at the moment, cos DX12 doesn't support direly use MSAA on back buffer, need a off-screen mass pass later. 
 
@@ -503,7 +504,7 @@ void D3D12Viewer::BeginBackSurface(BOOL clear)
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
 		m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
-		const Vec3 &ambient = m_world->GetAmbientLight();
+		const Vec3 &ambient = m_world->GetLightSources()->GetAmbientLight();
 		// the gamma correction, to the approximation, use the power 1/gamma, and the gamma == 2, which is just square-root.
 		const float clearColor[] = { sqrt(ambient.r()), sqrt(ambient.g()), sqrt(ambient.b()), 1.0f };
 		m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);

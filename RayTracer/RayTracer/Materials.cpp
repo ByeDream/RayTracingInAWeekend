@@ -119,7 +119,7 @@ void Metal::ApplyCBV(D3D12Viewer *viewer, D3D12_GPU_DESCRIPTOR_HANDLE illumCbvHa
 
 PipelineState Metal::s_pso;
 
-void Metal::BuildPSO(D3D12Viewer *viewer)
+void Metal::BuildPSO(D3D12Viewer *viewer, UINT32 lightSourceCount)
 {
 	D3D12_INPUT_LAYOUT_DESC inputLayout{ SimpleMesh::D3DVertexDeclaration, SimpleMesh::D3DVertexDeclarationElementCount };
 
@@ -224,7 +224,7 @@ void Dielectric::ApplyCBV(D3D12Viewer *viewer, D3D12_GPU_DESCRIPTOR_HANDLE illum
 
 PipelineState Dielectric::s_pso;
 
-void Dielectric::BuildPSO(D3D12Viewer *viewer)
+void Dielectric::BuildPSO(D3D12Viewer *viewer, UINT32 lightSourceCount)
 {
 	D3D12_INPUT_LAYOUT_DESC inputLayout{ SimpleMesh::D3DVertexDeclaration, SimpleMesh::D3DVertexDeclarationElementCount };
 

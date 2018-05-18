@@ -8,6 +8,7 @@
 #include "Materials.h"
 #include "World.h"
 #include "Randomizer.h"
+#include "LightSources.h"
 
 using namespace std;
 
@@ -57,9 +58,9 @@ void SimpleObjectSphere::Render(D3D12Viewer *viewer, UINT32 mid) const
 	{
 		ID3D12GraphicsCommandList *commandList = viewer->GetGraphicsCommandList();
 
-		m_material->ApplySRV(viewer);
-		m_material->ApplyCBV(viewer, m_world->GetIllumCbvHandle(m_world->GetFrameIndex()));
 		commandList->SetGraphicsRootDescriptorTable(0, m_d3dRes.m_GeoCbvHandles[m_world->GetFrameIndex()]);
+		m_material->ApplyCBV(viewer, m_world->GetLightSources()->GetIllumCbvHandle(m_world->GetFrameIndex()));
+		m_material->ApplySRV(viewer);
 
 		commandList->IASetPrimitiveTopology(ConvertPrimitiveType(m_mesh->m_primitiveType));
 		commandList->IASetIndexBuffer(&m_mesh->m_d3dRes.m_indexBufferView);

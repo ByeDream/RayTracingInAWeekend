@@ -114,6 +114,9 @@
     <ClInclude Include="D3D12Defines.h">
       <Filter>Source\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="LightSources.h">
+      <Filter>Source\3DScene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracer.cpp">
@@ -171,6 +174,9 @@
       <Filter>Source\Utils</Filter>
     </ClCompile>
     <ClCompile Include="Materials.cpp">
+      <Filter>Source\3DScene</Filter>
+    </ClCompile>
+    <ClCompile Include="LightSources.cpp">
       <Filter>Source\3DScene</Filter>
     </ClCompile>
   </ItemGroup>

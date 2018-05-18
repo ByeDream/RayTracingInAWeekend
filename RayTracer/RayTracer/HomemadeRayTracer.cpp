@@ -13,6 +13,8 @@
 #include "SimpleObject.h"
 #include "Hitables.h"
 
+#include "LightSources.h"
+
 using namespace std;
 
 #define SHOW_PROGRESS
@@ -181,7 +183,7 @@ Vec3 HomemadeRayTracer::Sample(const Ray &r, UINT32 depth) const
 	}
 	else
 	{
-		col = m_world->GetAmbientLight();
+		col = m_world->GetLightSources()->GetAmbientLight();
 	}
 
 	return col;
