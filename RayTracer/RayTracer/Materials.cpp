@@ -92,14 +92,14 @@ void Lambertian::ApplyPSO(D3D12Viewer *viewer)
 Metal::Metal(ITexture2D *albedo, float fuzziness)
 	: m_albedo(albedo)
 {
-	m_data.m_fuzziness.x = (fuzziness < 1.0f) ? ((fuzziness >= 0.0f) ? fuzziness : 0.0f) : 1.0f;
+	m_data.fuzziness.x = (fuzziness < 1.0f) ? ((fuzziness >= 0.0f) ? fuzziness : 0.0f) : 1.0f;
 }
 
 BOOL Metal::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered, Vec3 &emitted) const
 {
 	Vec3 r_reflected;
 	Optics::Reflect(normalize(r_in.m_dir), rec.m_normal, r_reflected);
-	r_scattered = Ray(rec.m_position, r_reflected + m_data.m_fuzziness.x * Randomizer::RomdomInUnitSphere());
+	r_scattered = Ray(rec.m_position, r_reflected + m_data.fuzziness.x * Randomizer::RomdomInUnitSphere());
 	attenuation = m_albedo->Sample(rec.m_u, rec.m_v);
 	return (dot(r_scattered.m_dir, rec.m_normal) > 0); // absorb the scatter ray if it is below the surface
 }
@@ -113,8 +113,8 @@ void Metal::ApplySRV(D3D12Viewer *viewer) const
 void Metal::ApplyCBV(D3D12Viewer *viewer, D3D12_GPU_DESCRIPTOR_HANDLE illumCbvHandle) const
 {
 	ID3D12GraphicsCommandList *commandList = viewer->GetGraphicsCommandList();
-	commandList->SetGraphicsRootDescriptorTable(1, m_d3dRes.m_MtlCbvHandle);
-	commandList->SetGraphicsRootDescriptorTable(2, illumCbvHandle);
+	commandList->SetGraphicsRootDescriptorTable(1, illumCbvHandle);
+	commandList->SetGraphicsRootDescriptorTable(2, m_d3dRes.m_MtlCbvHandle);
 }
 
 PipelineState Metal::s_pso;
@@ -125,8 +125,8 @@ void Metal::BuildPSO(D3D12Viewer *viewer, UINT32 lightSourceCount)
 
 	CD3DX12_DESCRIPTOR_RANGE1 ranges[4];
 	ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-	ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-	ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+	ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1 + lightSourceCount, 0, 1, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+	ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 	ranges[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
@@ -165,7 +165,7 @@ void Metal::ApplyPSO(D3D12Viewer *viewer)
 
 Dielectric::Dielectric(float refractiveIndex)
 {
-	m_data.m_refractiveIndex.x = refractiveIndex;
+	m_data.refractiveIndex.x = refractiveIndex;
 }
 
 BOOL Dielectric::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered, Vec3 &emitted) const
@@ -182,20 +182,20 @@ BOOL Dielectric::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuatio
 	if (dot(uv, rec.m_normal) > 0) {
 		// from internal to outside
 		outward_normal = -rec.m_normal;
-		ni_over_nt = m_data.m_refractiveIndex.x;  // device by air ref index(1.0f)
-		cosine = m_data.m_refractiveIndex.x * dot(uv, rec.m_normal);
+		ni_over_nt = m_data.refractiveIndex.x;  // device by air ref index(1.0f)
+		cosine = m_data.refractiveIndex.x * dot(uv, rec.m_normal);
 	}
 	else
 	{
 		// from outside to internal
 		outward_normal = rec.m_normal;
-		ni_over_nt = 1.0f / m_data.m_refractiveIndex.x;  // device by air ref index(1.0f)
+		ni_over_nt = 1.0f / m_data.refractiveIndex.x;  // device by air ref index(1.0f)
 		cosine = -dot(uv, rec.m_normal);
 	}
 
 	if (Optics::Refract(uv, outward_normal, ni_over_nt, r_refracted))
 	{
-		reflect_prob = Optics::Schlick(cosine, m_data.m_refractiveIndex.x);
+		reflect_prob = Optics::Schlick(cosine, m_data.refractiveIndex.x);
 	}
 	else
 	{
@@ -218,8 +218,8 @@ BOOL Dielectric::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuatio
 void Dielectric::ApplyCBV(D3D12Viewer *viewer, D3D12_GPU_DESCRIPTOR_HANDLE illumCbvHandle) const
 {
 	ID3D12GraphicsCommandList *commandList = viewer->GetGraphicsCommandList();
-	commandList->SetGraphicsRootDescriptorTable(1, m_d3dRes.m_MtlCbvHandle);
-	commandList->SetGraphicsRootDescriptorTable(2, illumCbvHandle);
+	commandList->SetGraphicsRootDescriptorTable(1, illumCbvHandle);
+	commandList->SetGraphicsRootDescriptorTable(2, m_d3dRes.m_MtlCbvHandle);
 }
 
 PipelineState Dielectric::s_pso;
@@ -230,8 +230,8 @@ void Dielectric::BuildPSO(D3D12Viewer *viewer, UINT32 lightSourceCount)
 
 	CD3DX12_DESCRIPTOR_RANGE1 ranges[3];
 	ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-	ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-	ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+	ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1 + lightSourceCount, 0, 1, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+	ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[3];
 	rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_VERTEX);
@@ -253,12 +253,12 @@ void Dielectric::ApplyPSO(D3D12Viewer *viewer)
 
 DiffuseLight::DiffuseLight(const Vec3 intensity)
 {
-	DirectX::XMStoreFloat4(&m_data.m_intensity, intensity.m_simd);
+	DirectX::XMStoreFloat4(&m_data.intensity, intensity.m_simd);
 }
 
 BOOL DiffuseLight::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered, Vec3 &emitted) const
 {
-	emitted = DirectX::XMLoadFloat4(&m_data.m_intensity);
+	emitted = DirectX::XMLoadFloat4(&m_data.intensity);
 	return FALSE; // no scattering but emitting
 }
 

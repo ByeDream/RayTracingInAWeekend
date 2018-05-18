@@ -9,6 +9,7 @@
 #include "World.h"
 #include "Randomizer.h"
 #include "LightSources.h"
+#include "std_cbuffer.h"
 
 using namespace std;
 
@@ -45,8 +46,8 @@ void SimpleObjectSphere::Update(SimpleCamera *camera, float elapsedSeconds)
 	scale = DirectX::XMMatrixScaling(m_scale, m_scale, m_scale);
 	mv = scale * trans * camera->GetViewMatrix();
 	// Compute the model-view-projection matrix.
-	DirectX::XMStoreFloat4x4(&geoConstants.mWorldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
-	DirectX::XMStoreFloat4x4(&geoConstants.mWorldView, DirectX::XMMatrixTranspose(mv));
+	DirectX::XMStoreFloat4x4(&geoConstants.worldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
+	DirectX::XMStoreFloat4x4(&geoConstants.worldView, DirectX::XMMatrixTranspose(mv));
 
 	// Copy this matrix into the appropriate location in the geo constant buffer.
 	memcpy(m_d3dRes.m_pGeoConstants + m_d3dRes.m_GeoConstantBufferSize * m_world->GetFrameIndex(), &geoConstants, sizeof(GeometryConstants));

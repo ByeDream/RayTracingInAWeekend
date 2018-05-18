@@ -6,6 +6,7 @@
 #include "SimpleCamera.h"
 #include "D3D12Viewer.h"
 #include "D3D12Helper.h"
+#include "std_cbuffer.h"
 
 #define AMBIENT_INTENSITY_ATTENUATION 0.4f // to simulate global attenuation of indirect light
 
@@ -52,7 +53,7 @@ void LightSources::Update(SimpleCamera *camera, float elapsedSeconds)
 		XMVECTOR lightPosView = DirectX::XMVector4Transform(lightPosWorld, camera->GetViewMatrix());
 
 		DirectX::XMStoreFloat4(&lightConstants.lightPositionView, lightPosView);
-		lightConstants.lightIntensity = lightMtl->m_data.m_intensity;
+		lightConstants.lightIntensity = lightMtl->m_data.intensity;
 		lightConstants.lightAttenuation = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f); // TBD
 		UINT32 index = m_world->GetFrameIndex() * m_lightSourceCount + i;
 		memcpy(m_pLightSourceConstants + m_lightSourceConstantBufferSize * index, &lightConstants, sizeof(LightSourceConstants));

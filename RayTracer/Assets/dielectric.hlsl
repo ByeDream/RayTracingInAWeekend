@@ -1,40 +1,27 @@
 #include "illum.hs"
+#include "psinput.hs"
+#include "std_cbuffer.h"
 
-struct PSInput
-{
-	float4 position		: SV_POSITION;
-	float3 normalV		: TEXCOORD0;
-	float4 tangentV		: TEXCOORD1;
-	float3 positionV	: TEXCOORD2;
-	float2 uv			: TEXCOORD3;
-};
+ConstantBuffer<DielectricConstants> g_mtlConstants : register(b1);
 
-cbuffer MaterialConstants : register(b1)
-{
-	float4 g_refractiveIndex;
-};
-
-cbuffer IllumConstants : register(b2)
-{
-	float4 g_lightDirV;				// Light direction in view space.
-	float4 g_lightIntensity;
-	float4 g_ambientIntensity;
-};
+ConstantBuffer<IllumGlobalConstants> g_illumGlobalConstants : register(b0, space1);
+ConstantBuffer<LightSourceConstants> g_lightSourceConstants[] : register(b1, space1);
 
 float4 PSMain(PSInput input) : SV_TARGET
 {
 	float specPow = 3; // hardcode the specular power for simplified modeling 
 	float3 diff_c = float3(1.0f, 1.0f, 1.0f);
-	float alpha = clamp(abs(g_refractiveIndex.x - 1.0f) * 1.6f, 0.0f, 1.0f);
+	float alpha = clamp(abs(g_mtlConstants.refractiveIndex.x - 1.0f) * 1.6f, 0.0f, 1.0f);
 						// to fix the value after iterpolation
 	const float3 vN = normalize(input.normalV);
 	const float3 vT = normalize(input.tangentV.xyz - dot(input.tangentV.xyz, vN) * vN);
 	const float3 vB = input.tangentV.w * cross(vN, vT);
-	const float3 vL = normalize(g_lightDirV.xyz);
+	float3 vL = g_lightSourceConstants[0].lightPositionView.xyz - input.positionV;
+	vL = normalize(vL);
 	const float3 vV = normalize(float3(0, 0, 0) - input.positionV);
 
-	float3 vLightInts = g_lightIntensity.rgb  * BRDF_ts_nphong_nofr(vN, vL, vV, diff_c, diff_c, specPow);
-	vLightInts += (diff_c * g_ambientIntensity.rgb);
+	float3 vLightInts = g_lightSourceConstants[0].lightIntensity.rgb  * BRDF_ts_nphong_nofr(vN, vL, vV, diff_c, diff_c, specPow);
+	vLightInts += (diff_c * g_illumGlobalConstants.ambientIntensity.rgb);
 
 	// the gamma correction, to the approximation, use the power 1/gamma, and the gamma == 2, which is just square-root.
 	vLightInts = sqrt(vLightInts);

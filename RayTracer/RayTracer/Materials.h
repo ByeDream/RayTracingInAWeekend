@@ -2,6 +2,7 @@
 
 #include "Vec3.h"
 #include "D3D12Defines.h"
+#include "std_cbuffer.h"
 
 enum MaterialID
 {
@@ -62,12 +63,7 @@ public:
 class Metal : public IMaterial
 {
 public:
-	struct Data // always use XMFLOAT4 for fix padding
-	{
-		XMFLOAT4 m_fuzziness;
-	};
-	Data m_data;
-
+	MetalConstants m_data;
 	ITexture2D *m_albedo{ nullptr }; // the reflectance
 
 	Metal(ITexture2D *albedo, float fuzziness);
@@ -90,11 +86,7 @@ public:
 class Dielectric : public IMaterial
 {
 public:
-	struct Data // always use XMFLOAT4 for fix padding
-	{
-		XMFLOAT4 m_refractiveIndex;
-	};
-	Data m_data;
+	DielectricConstants m_data;
 
 	Dielectric(float refractiveIndex); 
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered, Vec3 &emitted) const override;
@@ -114,11 +106,7 @@ public:
 class DiffuseLight : public IMaterial
 {
 public:
-	struct Data // always use XMFLOAT4 for fix padding
-	{
-		XMFLOAT4 m_intensity;
-	};
-	Data m_data;
+	DiffuseLightConstants m_data;
 
 	DiffuseLight(const Vec3 intensity);
 	virtual BOOL Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuation, Ray &r_scattered, Vec3 &emitted) const override;

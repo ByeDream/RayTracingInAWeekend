@@ -11,12 +11,6 @@ class SimpleCamera;
 class World;
 struct HitRecord;
 
-struct GeometryConstants
-{
-	XMFLOAT4X4 mWorldViewProj;		// Model-view-projection (MVP) matrix.
-	XMFLOAT4X4 mWorldView;			// Model-view (MV) matrix.
-};
-
 struct ObjectD3D12Resources
 {
 	UINT8 *							m_pGeoConstants;

@@ -1,26 +1,6 @@
 #include "illum.hs"
-
-struct PSInput
-{
-	float4 position		: SV_POSITION;
-	float3 normalV		: TEXCOORD0;
-	float4 tangentV		: TEXCOORD1;
-	float3 positionV	: TEXCOORD2;
-	float2 uv			: TEXCOORD3;
-};
-
-struct IllumGlobalConstants
-{
-	float4	ambientIntensity;
-	float4	lightSourceCount;
-};
-
-struct LightSourceConstants
-{
-	float4	lightPositionView;
-	float4	lightIntensity;
-	float4  lightAttenuation;
-};
+#include "psinput.hs"
+#include "std_cbuffer.h"
 
 ConstantBuffer<IllumGlobalConstants> g_illumGlobalConstants : register(b0, space1);
 ConstantBuffer<LightSourceConstants> g_lightSourceConstants[] : register(b1, space1);
