@@ -13,25 +13,37 @@
 
 using namespace std;
 
-SimpleObjectSphere::SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world)
-{
-	m_position = center;
-	m_scale = radius;
-	m_mesh = mesh;
-	m_material = material;
-	SphereHitable *hitable = new SphereHitable(center, radius);
-	hitable->BindMaterial(material);
-	m_hitable = hitable;
-	m_world = world;
-}
-
-SimpleObjectSphere::~SimpleObjectSphere()
+Object::~Object()
 {
 	if (m_hitable)
 	{
 		delete m_hitable;
 		m_hitable = nullptr;
 	}
+}
+
+
+BOOL Object::Hit(const Ray &r, float &t_min, float &t_max, HitRecord &out_rec) const
+{
+	BOOL hitMe = FALSE;
+	if (m_hitable->Hit(r, t_min, t_max, out_rec))
+	{
+		t_max = out_rec.m_time;
+		hitMe = TRUE;
+	}
+
+	return hitMe;
+}
+
+SimpleObjectSphere::SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world)
+{
+	m_position = center;
+	m_scale = Vec3(radius, radius, radius);
+	m_mesh = mesh;
+	m_material = material;
+	m_hitable = new SphereHitable(center, radius);
+	m_hitable->BindMaterial(material);
+	m_world = world;
 }
 
 void SimpleObjectSphere::Update(SimpleCamera *camera, float elapsedSeconds)
@@ -43,7 +55,7 @@ void SimpleObjectSphere::Update(SimpleCamera *camera, float elapsedSeconds)
 	GeometryConstants geoConstants;
 
 	trans = DirectX::XMMatrixTranslationFromVector(m_position.m_simd);
-	scale = DirectX::XMMatrixScaling(m_scale, m_scale, m_scale);
+	scale = DirectX::XMMatrixScalingFromVector(m_scale.m_simd);
 	mv = scale * trans * camera->GetViewMatrix();
 	// Compute the model-view-projection matrix.
 	DirectX::XMStoreFloat4x4(&geoConstants.worldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
@@ -72,19 +84,7 @@ void SimpleObjectSphere::Render(D3D12Viewer *viewer, UINT32 mid) const
 
 AABB SimpleObjectSphere::BoundingBox() const
 {
-	return AABB(m_position - Vec3(m_scale, m_scale, m_scale), m_position + Vec3(m_scale, m_scale, m_scale));
-}
-
-BOOL SimpleObjectSphere::Hit(const Ray &r, float &t_min, float &t_max, HitRecord &rec) const
-{
-	BOOL hitMe = FALSE;
-	if (m_hitable->Hit(r, t_min, t_max, rec))
-	{
-		t_max = rec.m_time;
-		hitMe = TRUE;
-	}
-
-	return hitMe;
+	return AABB(m_position - m_scale, m_position + m_scale);
 }
 
 void SimpleObjectSphere::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle)
@@ -131,6 +131,82 @@ void SimpleObjectSphere::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR
 	}
 }
 
+
+SimpleObjectRect::SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &center, float width, float height, BOOL reverseFace, Mesh *mesh, IMaterial *material, World *world)
+	: m_alignAxes(axes)
+	, m_reverseFace(reverseFace)
+{
+	m_position = center;
+	UINT aAxisIndex, bAxisIndex, cAxisIndex;
+	switch (m_alignAxes)
+	{
+	case XY_RECT:
+		aAxisIndex = 0;
+		bAxisIndex = 1;
+		cAxisIndex = 2;
+		break;
+	case XZ_RECT:
+		aAxisIndex = 0;
+		bAxisIndex = 2;
+		cAxisIndex = 1;
+		break;
+	default:
+		aAxisIndex = 2;
+		bAxisIndex = 1;
+		cAxisIndex = 0;
+		break;
+	}
+
+	m_scale.set(aAxisIndex, width);
+	m_scale.set(bAxisIndex, height);
+	m_scale.set(cAxisIndex, 1.0f);
+	Vec3 half;
+	half.set(aAxisIndex, width / 2.0f);
+	half.set(bAxisIndex, height / 2.0f);
+	half.set(cAxisIndex, 0.0001f);
+
+	m_min = m_position - half;
+	m_max = m_position + half;
+	//m_mesh = mesh;
+	m_material = material;
+	m_hitable = new AxisAlignedRectHitable(aAxisIndex, bAxisIndex, m_min[aAxisIndex], m_max[aAxisIndex], m_min[bAxisIndex], m_max[bAxisIndex], m_position[cAxisIndex]);
+	m_hitable->BindMaterial(material);
+	m_world = world;
+}
+
+void SimpleObjectRect::Update(SimpleCamera *camera, float elapsedSeconds)
+{
+	
+}
+
+void SimpleObjectRect::Render(D3D12Viewer *viewer, UINT32 mid) const
+{
+	
+}
+
+BOOL SimpleObjectRect::Hit(const Ray &r, float &t_min, float &t_max, HitRecord &out_rec) const
+{
+	BOOL hitMe = FALSE;
+	if (m_hitable->Hit(r, t_min, t_max, out_rec))
+	{
+		t_max = out_rec.m_time;
+		if (m_reverseFace)
+			out_rec.m_normal = -out_rec.m_normal;
+		hitMe = TRUE;
+	}
+
+	return hitMe;
+}
+
+AABB SimpleObjectRect::BoundingBox() const
+{
+	return AABB(m_min, m_max);
+}
+
+void SimpleObjectRect::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle)
+{
+	
+}
 
 SimpleObjectBVHNode::SimpleObjectBVHNode(std::vector<Object *> objects)
 {

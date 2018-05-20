@@ -20,7 +20,7 @@ struct Vec3
 	inline const Vec3& operator+() const { return *this; }
 	inline const Vec3 operator-() const { return DirectX::XMVectorNegate(m_simd); }
 	inline const float operator[](size_t index) const { return DirectX::XMVectorGetByIndex(m_simd, index); }
-	inline void set(size_t index, float f) { DirectX::XMVectorSetByIndex(m_simd, f, index); }
+	inline void set(size_t index, float f) { m_simd = DirectX::XMVectorSetByIndex(m_simd, f, index); }
 	
 	inline Vec3& operator+=(const Vec3 &v2) { m_simd = DirectX::XMVectorAdd(m_simd, v2.m_simd); return *this; }
 	inline Vec3& operator-=(const Vec3 &v2) { m_simd = DirectX::XMVectorSubtract(m_simd, v2.m_simd); return *this; }

@@ -30,7 +30,7 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 		// when discriminant == 0, there is only one solution that is -b / (2.0f * a), which means hit with the edge of Sphere
 		// when discriminant > 0, it is could be +/- sqrt(discriminant), which mean hit with separate far/near point on the Sphere
 		float t = (-b - sqrt(discriminant)) / (2.0f * a);
-		if (t < t_max && t > t_min)
+		if (t <= t_max && t >= t_min)
 		{
 			out_rec.m_time = t;
 			out_rec.m_position = r.PointAt(t);
@@ -40,7 +40,7 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 			return TRUE; // the nearest hitting on ray direction
 		}
 		t = (-b + sqrt(discriminant)) / (2.0f * a);
-		if (t < t_max && t > t_min)
+		if (t <= t_max && t >= t_min)
 		{
 			out_rec.m_time = t;
 			out_rec.m_position = r.PointAt(t);
@@ -69,4 +69,41 @@ void SphereHitable::CalculateUV(HitRecord &rec) const
 
 	rec.m_u = 1.0f - (theta + (float)M_PI) / (2.0f * (float)M_PI);
 	rec.m_v = (phi + (float)M_PI / 2.0f) / (float)M_PI;
+}
+
+AxisAlignedRectHitable::AxisAlignedRectHitable(UINT32 aAxisIndex, UINT32 bAxisIndex, float a0, float a1, float b0, float b1, float c)
+	: m_a0(a0), m_a1(a1), m_b0(b0), m_b1(b1), m_c(c), m_aAxisIndex(aAxisIndex), m_bAxisIndex(bAxisIndex)
+{
+	assert(m_aAxisIndex < 3 && m_bAxisIndex < 3 && m_aAxisIndex != m_bAxisIndex && "Invalid arguments");
+	m_cAxisIndex = (m_aAxisIndex == 0 ? (m_bAxisIndex == 1 ? 2 : 1) : (m_aAxisIndex == 1 ? (m_bAxisIndex == 0 ? 2 : 0) : (m_bAxisIndex == 1 ? 0 : 1)));
+
+	if (m_a0 > m_a1)
+		std::swap(m_a0, m_a1);
+
+	if (m_b0 > m_b1)
+		std::swap(m_b0, m_b1);
+}
+
+BOOL AxisAlignedRectHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const
+{
+	float t = (m_c - r.m_org[m_cAxisIndex]) / r.m_dir[m_cAxisIndex];
+	if (t <= t_max && t >= t_min)
+	{
+		float a = r.m_org[m_aAxisIndex] + t * r.m_dir[m_aAxisIndex];
+		float b = r.m_org[m_bAxisIndex] + t * r.m_dir[m_bAxisIndex];
+		if (a >= m_a0 && a <= m_a1 && b >= m_b0 && b <= m_b1)
+		{
+			out_rec.m_u = (a - m_a0) / (m_a1 - m_a0);
+			out_rec.m_v = (b - m_b0) / (m_b1 - m_b0);
+			out_rec.m_time = t;
+			out_rec.m_hitMaterial = m_material;
+			out_rec.m_position = r.PointAt(t);
+			out_rec.m_normal.set(m_aAxisIndex, 0.0f);
+			out_rec.m_normal.set(m_bAxisIndex, 0.0f);
+			out_rec.m_normal.set(m_cAxisIndex, 1.0f);
+			return TRUE;
+		}
+	}
+
+	return FALSE;
 }
