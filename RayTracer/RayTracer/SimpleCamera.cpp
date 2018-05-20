@@ -12,19 +12,10 @@
 
 using namespace std;
 
-SimpleCamera::SimpleCamera(const Vec3 &lookFrom, const Vec3 &lookAt, float fov, float aspectRatio, float minZ, float maxZ, float aperture, const World *world, InputListener *inputListener)
-	: m_initialOrigin(lookFrom)
-	, m_initialFocus(lookAt)
-	, m_vup(0.0f, 1.0f, 0.0f) // no roll
-	, m_fov(fov)
-	, m_aspectRatio(aspectRatio)
-	, m_nearPlane(minZ)
-	, m_farPlane(maxZ)
-	, m_lensRadius(aperture / 2.0f)
-	, m_world(world)
+SimpleCamera::SimpleCamera(const World *world, InputListener *inputListener, float aspectRatio)
+	: m_world(world)
 	, m_inputListener(inputListener)
-	, m_moveSpeed(0.0f)
-	, m_turnSpeed(0.0f)
+	, m_aspectRatio(aspectRatio)
 {
 	m_inputListener->RegisterKey('H');
 	m_inputListener->RegisterKey('W');
@@ -36,8 +27,29 @@ SimpleCamera::SimpleCamera(const Vec3 &lookFrom, const Vec3 &lookAt, float fov, 
 	m_inputListener->RegisterKey(VK_RIGHT);
 	m_inputListener->RegisterKey(VK_DOWN);
 	m_inputListener->RegisterKey(VK_ESCAPE);
+}
 
+void SimpleCamera::Initialize(
+	const Vec3 &lookFrom,
+	const Vec3 &lookAt,
+	float fov,
+	float minZ,
+	float maxZ,
+	float aperture,
+	float unitsPerSecond,
+	float radiansPerSecond)
+{
+	m_initialOrigin = lookFrom;
+	m_initialFocus = lookAt;
+	m_vup = Vec3(0.0f, 1.0f, 0.0f); // no roll
+	m_fov = fov;
+	m_nearPlane = minZ;
+	m_farPlane = maxZ;
+	m_lensRadius = aperture / 2.0f;
 	Reset();
+
+	m_moveSpeed = unitsPerSecond;
+	m_turnSpeed = radiansPerSecond;
 }
 
 Ray SimpleCamera::GetRay(float u, float v) const

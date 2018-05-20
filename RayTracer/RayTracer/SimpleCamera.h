@@ -8,20 +8,16 @@ class InputListener;
 class SimpleCamera
 {
 public:
-	SimpleCamera(
-		const Vec3 &lookFrom,
-		const Vec3 &lookAt,
-		float fov,
-		float aspectRatio,
-		float minZ,
-		float maxZ,
-		float aperture,
-		const World *world,
-		InputListener *inputListener
-	);
+	SimpleCamera(const World *world, InputListener *inputListener, float aspectRatio);
 
-	inline void						SetMoveSpeed(float unitsPerSecond) { m_moveSpeed = unitsPerSecond; }
-	inline void						SetTurnSpeed(float radiansPerSecond) { m_turnSpeed = radiansPerSecond; }
+	void							Initialize( const Vec3 &lookFrom,
+												const Vec3 &lookAt,
+												float fov,
+												float minZ,
+												float maxZ,
+												float aperture,
+												float unitsPerSecond,
+												float radiansPerSecond);
 
 	Ray								GetRay(float u, float v) const;
 	void							OnUpdate(float elapsedSeconds);

@@ -120,6 +120,9 @@
     <ClInclude Include="..\Assets\std_cbuffer.h">
       <Filter>Assets\Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="Resouces.h">
+      <Filter>Source\3DScene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracer.cpp">
@@ -180,6 +183,9 @@
       <Filter>Source\3DScene</Filter>
     </ClCompile>
     <ClCompile Include="LightSources.cpp">
+      <Filter>Source\3DScene</Filter>
+    </ClCompile>
+    <ClCompile Include="Resouces.cpp">
       <Filter>Source\3DScene</Filter>
     </ClCompile>
   </ItemGroup>

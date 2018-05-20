@@ -185,6 +185,7 @@
     <ClInclude Include="OutputImage.h" />
     <ClInclude Include="PPMImageMaker.h" />
     <ClInclude Include="RayTracer.h" />
+    <ClInclude Include="Resouces.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SimpeMeshBuilder.h" />
     <ClInclude Include="SimpleTexture2D.h" />
@@ -211,6 +212,7 @@
     <ClCompile Include="OutputImage.cpp" />
     <ClCompile Include="PPMImageMaker.cpp" />
     <ClCompile Include="RayTracer.cpp" />
+    <ClCompile Include="Resouces.cpp" />
     <ClCompile Include="SimpeMeshBuilder.cpp" />
     <ClCompile Include="SimpleTexture2D.cpp" />
     <ClCompile Include="SimpleCamera.cpp" />

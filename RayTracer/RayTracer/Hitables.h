@@ -40,6 +40,7 @@ private:
 	void CalculateUV(HitRecord &rec) const;
 };
 
+// Axis-aligned rectangle hitable
 class AxisAlignedRectHitable : public IHitable
 {
 public:
@@ -48,3 +49,5 @@ public:
 	AxisAlignedRectHitable(UINT32 aAxisIndex, UINT32 bAxisIndex, float a0, float a1, float b0, float b1, float c);
 	virtual BOOL Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const override;
 };
+
+// Hitable Combo
