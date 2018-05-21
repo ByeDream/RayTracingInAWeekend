@@ -88,6 +88,17 @@ void Resources::LoadMeshes()
 	SimpleMesh *lowPolygonSphere = new SimpleMesh();
 	SimpeMeshBuilder::BuildSphereMesh(lowPolygonSphere, 1.0f, 20, 20);
 	m_meshes.push_back(lowPolygonSphere);
+
+	// MESH_ID_QUAD
+	SimpleMesh *quad = new SimpleMesh();
+	SimpeMeshBuilder::BuildQuadMesh(quad, 1.0f);
+	m_meshes.push_back(quad);
+
+	// MESH_ID_CUBE
+	SimpleMesh *cube = new SimpleMesh();
+	SimpeMeshBuilder::BuildCubeMesh(cube, 1.0f);
+	m_meshes.push_back(cube);
+
 }
 
 void Resources::LoadMaterials()

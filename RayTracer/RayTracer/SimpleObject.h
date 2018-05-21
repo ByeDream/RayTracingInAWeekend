@@ -41,10 +41,10 @@ public:
 	ObjectD3D12Resources		m_d3dRes;
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) = 0;
-	virtual void				Render(D3D12Viewer *viewer, UINT32 mid) const = 0;
+	virtual void				Render(D3D12Viewer *viewer, UINT32 mid) const;
 	virtual AABB				BoundingBox() const = 0; // return bool as some object doesn't have bounding-box like a plane
 	virtual BOOL				Hit(const Ray &r, float &t_min, float &t_max, HitRecord &out_rec) const;
-	virtual void				BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle) = 0;
+	virtual void				BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle);
 };
 
 class SimpleObjectSphere : public Object
@@ -53,9 +53,7 @@ public:
 	SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world);
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
-	virtual void				Render(D3D12Viewer *viewer, UINT32 mid) const override;
 	virtual AABB				BoundingBox() const override;
-	virtual void				BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle) override;
 };
 
 enum SimpleObjectRectAlignAxes
@@ -71,9 +69,7 @@ public:
 	SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &center, float width, float height, BOOL reverseFace, Mesh *mesh, IMaterial *material, World *world);
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
-	virtual void				Render(D3D12Viewer *viewer, UINT32 mid) const override;
 	virtual AABB				BoundingBox() const override;
-	virtual void				BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle) override;
 
 	Vec3						m_min;
 	Vec3						m_max;
@@ -88,9 +84,7 @@ public:
 	virtual ~SimpleObjectCube() override;
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
-	virtual void				Render(D3D12Viewer *viewer, UINT32 mid) const override;
 	virtual AABB				BoundingBox() const override;
-	virtual void				BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle) override;
 
 	Vec3						m_min;
 	Vec3						m_max;

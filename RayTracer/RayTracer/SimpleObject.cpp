@@ -23,49 +23,7 @@ Object::~Object()
 }
 
 
-BOOL Object::Hit(const Ray &r, float &t_min, float &t_max, HitRecord &out_rec) const
-{
-	BOOL hitMe = FALSE;
-	if (m_hitable->Hit(r, t_min, t_max, out_rec))
-	{
-		t_max = out_rec.m_time;
-		hitMe = TRUE;
-	}
-
-	return hitMe;
-}
-
-SimpleObjectSphere::SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world)
-{
-	m_position = center;
-	m_scale = Vec3(radius, radius, radius);
-	m_mesh = mesh;
-	m_material = material;
-	m_hitable = new SphereHitable(center, radius);
-	m_hitable->BindMaterial(material);
-	m_world = world;
-}
-
-void SimpleObjectSphere::Update(SimpleCamera *camera, float elapsedSeconds)
-{
-	// update constants
-	XMMATRIX scale;
-	XMMATRIX trans;
-	XMMATRIX mv;
-	GeometryConstants geoConstants;
-
-	trans = DirectX::XMMatrixTranslationFromVector(m_position.m_simd);
-	scale = DirectX::XMMatrixScalingFromVector(m_scale.m_simd);
-	mv = scale * trans * camera->GetViewMatrix();
-	// Compute the model-view-projection matrix.
-	DirectX::XMStoreFloat4x4(&geoConstants.worldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
-	DirectX::XMStoreFloat4x4(&geoConstants.worldView, DirectX::XMMatrixTranspose(mv));
-
-	// Copy this matrix into the appropriate location in the geo constant buffer.
-	memcpy(m_d3dRes.m_pGeoConstants + m_d3dRes.m_GeoConstantBufferSize * m_world->GetFrameIndex(), &geoConstants, sizeof(GeometryConstants));
-}
-
-void SimpleObjectSphere::Render(D3D12Viewer *viewer, UINT32 mid) const
+void Object::Render(D3D12Viewer *viewer, UINT32 mid) const
 {
 	if (m_material && m_material->GetID() == mid)
 	{
@@ -82,12 +40,19 @@ void SimpleObjectSphere::Render(D3D12Viewer *viewer, UINT32 mid) const
 	}
 }
 
-AABB SimpleObjectSphere::BoundingBox() const
+BOOL Object::Hit(const Ray &r, float &t_min, float &t_max, HitRecord &out_rec) const
 {
-	return AABB(m_position - m_scale, m_position + m_scale);
+	BOOL hitMe = FALSE;
+	if (m_hitable->Hit(r, t_min, t_max, out_rec))
+	{
+		t_max = out_rec.m_time;
+		hitMe = TRUE;
+	}
+
+	return hitMe;
 }
 
-void SimpleObjectSphere::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle)
+void Object::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle)
 {
 	ID3D12Device *device = viewer->GetDevice();
 	UINT32 handleOffset = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -96,7 +61,7 @@ void SimpleObjectSphere::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR
 	{
 		m_d3dRes.m_GeoConstantBufferSize = (sizeof(GeometryConstants) + 255) & ~255;	// CB size is required to be 256-byte aligned.
 
-		// Create an upload heap for the geo constant buffers.
+																						// Create an upload heap for the geo constant buffers.
 		ThrowIfFailed(device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
@@ -131,6 +96,40 @@ void SimpleObjectSphere::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR
 	}
 }
 
+SimpleObjectSphere::SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world)
+{
+	m_position = center;
+	m_scale = Vec3(radius, radius, radius);
+	m_mesh = mesh;
+	m_material = material;
+	m_hitable = new SphereHitable(center, radius);
+	m_hitable->BindMaterial(material);
+	m_world = world;
+}
+
+void SimpleObjectSphere::Update(SimpleCamera *camera, float elapsedSeconds)
+{
+	// update constants
+	XMMATRIX scale;
+	XMMATRIX trans;
+	XMMATRIX mv;
+	GeometryConstants geoConstants;
+
+	trans = DirectX::XMMatrixTranslationFromVector(m_position.m_simd);
+	scale = DirectX::XMMatrixScalingFromVector(m_scale.m_simd);
+	mv = scale * trans * camera->GetViewMatrix();
+	// Compute the model-view-projection matrix.
+	DirectX::XMStoreFloat4x4(&geoConstants.worldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
+	DirectX::XMStoreFloat4x4(&geoConstants.worldView, DirectX::XMMatrixTranspose(mv));
+
+	// Copy this matrix into the appropriate location in the geo constant buffer.
+	memcpy(m_d3dRes.m_pGeoConstants + m_d3dRes.m_GeoConstantBufferSize * m_world->GetFrameIndex(), &geoConstants, sizeof(GeometryConstants));
+}
+
+AABB SimpleObjectSphere::BoundingBox() const
+{
+	return AABB(m_position - m_scale, m_position + m_scale);
+}
 
 SimpleObjectRect::SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &center, float width, float height, BOOL reverseFace, Mesh *mesh, IMaterial *material, World *world)
 	: m_alignAxes(axes)
@@ -157,9 +156,10 @@ SimpleObjectRect::SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &c
 		break;
 	}
 
-	m_scale.set(aAxisIndex, width);
-	m_scale.set(bAxisIndex, height);
-	m_scale.set(cAxisIndex, 1.0f);
+	m_scale = Vec3(width, height, 1.0f);
+	//m_scale.set(aAxisIndex, width);
+	//m_scale.set(bAxisIndex, height);
+	//m_scale.set(cAxisIndex, 1.0f);
 	Vec3 half;
 	half.set(aAxisIndex, width / 2.0f);
 	half.set(bAxisIndex, height / 2.0f);
@@ -167,7 +167,7 @@ SimpleObjectRect::SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &c
 
 	m_min = m_position - half;
 	m_max = m_position + half;
-	//m_mesh = mesh;
+	m_mesh = mesh;
 	m_material = material;
 	m_hitable = new AxisAlignedRectHitable(aAxisIndex, bAxisIndex, m_min[aAxisIndex], m_max[aAxisIndex], m_min[bAxisIndex], m_max[bAxisIndex], m_position[cAxisIndex], m_reverseFace);
 	m_hitable->BindMaterial(material);
@@ -176,22 +176,70 @@ SimpleObjectRect::SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &c
 
 void SimpleObjectRect::Update(SimpleCamera *camera, float elapsedSeconds)
 {
-	
-}
+	XMMATRIX scale;
+	XMMATRIX rotate;
+	XMMATRIX trans;
+	XMMATRIX mv;
+	GeometryConstants geoConstants;
 
-void SimpleObjectRect::Render(D3D12Viewer *viewer, UINT32 mid) const
-{
-	
+	rotate = DirectX::XMMatrixIdentity();
+	switch (m_alignAxes)
+	{
+	case XY_RECT:
+		if (m_reverseFace)
+		{
+			rotate = DirectX::XMMatrixRotationY((float)M_PI);
+		}
+		else
+		{
+			rotate = DirectX::XMMatrixIdentity();
+		}
+		break;
+	case XZ_RECT:
+		if (m_reverseFace)
+		{
+			rotate = DirectX::XMMatrixRotationX((float)M_PI * 0.5f);
+		}
+		else
+		{
+			rotate = DirectX::XMMatrixRotationX((float)M_PI * -0.5f);
+		}
+		break;
+	default:
+		if (m_reverseFace)
+		{
+			rotate = DirectX::XMMatrixRotationY((float)M_PI * -0.5f);
+		}
+		else
+		{
+			rotate = DirectX::XMMatrixRotationY((float)M_PI * 0.5f);
+		}
+		break;
+	}
+
+	//rotate = DirectX::XMMatrixRotationX((float)M_PI / 2.0f);
+
+	/*
+	XMMATRIX    XM_CALLCONV     XMMatrixRotationX(float Angle);
+	XMMATRIX    XM_CALLCONV     XMMatrixRotationY(float Angle);
+	XMMATRIX    XM_CALLCONV     XMMatrixRotationZ(float Angle);
+	*/
+
+	trans = DirectX::XMMatrixTranslationFromVector(m_position.m_simd);
+	scale = DirectX::XMMatrixScalingFromVector(m_scale.m_simd);
+	mv = scale * rotate * trans * camera->GetViewMatrix();
+	// Compute the model-view-projection matrix.
+	DirectX::XMStoreFloat4x4(&geoConstants.worldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
+	DirectX::XMStoreFloat4x4(&geoConstants.worldView, DirectX::XMMatrixTranspose(mv));
+
+	// Copy this matrix into the appropriate location in the geo constant buffer.
+	memcpy(m_d3dRes.m_pGeoConstants + m_d3dRes.m_GeoConstantBufferSize * m_world->GetFrameIndex(), &geoConstants, sizeof(GeometryConstants));
+
 }
 
 AABB SimpleObjectRect::BoundingBox() const
 {
 	return AABB(m_min, m_max);
-}
-
-void SimpleObjectRect::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle)
-{
-	
 }
 
 SimpleObjectCube::SimpleObjectCube(const Vec3 &center, const Vec3 &size, Mesh *mesh, IMaterial *material, World *world)
@@ -240,22 +288,27 @@ SimpleObjectCube::~SimpleObjectCube()
 
 void SimpleObjectCube::Update(SimpleCamera *camera, float elapsedSeconds)
 {
+	// update constants
+	XMMATRIX scale;
+	XMMATRIX trans;
+	XMMATRIX mv;
+	GeometryConstants geoConstants;
 
-}
+	trans = DirectX::XMMatrixTranslationFromVector(m_position.m_simd);
+	scale = DirectX::XMMatrixScalingFromVector(m_scale.m_simd);
+	mv = scale * trans * camera->GetViewMatrix();
+	// Compute the model-view-projection matrix.
+	DirectX::XMStoreFloat4x4(&geoConstants.worldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
+	DirectX::XMStoreFloat4x4(&geoConstants.worldView, DirectX::XMMatrixTranspose(mv));
 
-void SimpleObjectCube::Render(D3D12Viewer *viewer, UINT32 mid) const
-{
+	// Copy this matrix into the appropriate location in the geo constant buffer.
+	memcpy(m_d3dRes.m_pGeoConstants + m_d3dRes.m_GeoConstantBufferSize * m_world->GetFrameIndex(), &geoConstants, sizeof(GeometryConstants));
 
 }
 
 AABB SimpleObjectCube::BoundingBox() const
 {
 	return AABB(m_min, m_max);
-}
-
-void SimpleObjectCube::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle)
-{
-
 }
 
 SimpleObjectBVHNode::SimpleObjectBVHNode(std::vector<Object *> objects)

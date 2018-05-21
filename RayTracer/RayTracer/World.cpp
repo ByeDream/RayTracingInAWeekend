@@ -69,21 +69,21 @@ void World::ConstructWorld(WorldID wid, SimpleCamera *camera)
 	case WORLD_ID_CORNELL_BOX:
 	{
 		// light on the top
-		objects.push_back(new SimpleObjectRect(XZ_RECT, Vec3(0.0f, 0.99f, 0.0f), 0.65f, 0.65f, TRUE, m_resources->GetTheMesh(MESH_ID_HIGH_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LIGHTSOURCE_BRIGHT), this));
+		objects.push_back(new SimpleObjectRect(XZ_RECT, Vec3(0.0f, 0.99f, 0.0f), 0.65f, 0.65f, TRUE, m_resources->GetTheMesh(MESH_ID_QUAD), m_resources->GetTheMaterial(MATERIAL_ID_LIGHTSOURCE_BRIGHT), this));
 
 		// red wall at the right
-		objects.push_back(new SimpleObjectRect(ZY_RECT, Vec3(1.0f, 0.0f, 0.0f), 2.0f, 2.0f, TRUE, m_resources->GetTheMesh(MESH_ID_HIGH_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN2), this));
+		objects.push_back(new SimpleObjectRect(ZY_RECT, Vec3(1.0f, 0.0f, 0.0f), 2.0f, 2.0f, TRUE, m_resources->GetTheMesh(MESH_ID_QUAD), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN2), this));
 		// green wall at the left
-		objects.push_back(new SimpleObjectRect(ZY_RECT, Vec3(-1.0f, 0.0f, 0.0f), 2.0f, 2.0f, FALSE, m_resources->GetTheMesh(MESH_ID_HIGH_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN4), this));
+		objects.push_back(new SimpleObjectRect(ZY_RECT, Vec3(-1.0f, 0.0f, 0.0f), 2.0f, 2.0f, FALSE, m_resources->GetTheMesh(MESH_ID_QUAD), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN4), this));
 		// white floor, background and ceiling
-		objects.push_back(new SimpleObjectRect(XY_RECT, Vec3(0.0f, 0.0f, -1.0f), 2.0f, 2.0f, FALSE, m_resources->GetTheMesh(MESH_ID_HIGH_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN3), this));
-		objects.push_back(new SimpleObjectRect(XZ_RECT, Vec3(0.0f, 1.0f, 0.0f), 2.0f, 2.0f, TRUE, m_resources->GetTheMesh(MESH_ID_HIGH_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN3), this));
-		objects.push_back(new SimpleObjectRect(XZ_RECT, Vec3(0.0f, -1.0f, 0.0f), 2.0f, 2.0f, FALSE, m_resources->GetTheMesh(MESH_ID_HIGH_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN3), this));
+		objects.push_back(new SimpleObjectRect(XY_RECT, Vec3(0.0f, 0.0f, -1.0f), 2.0f, 2.0f, FALSE, m_resources->GetTheMesh(MESH_ID_QUAD), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN3), this));
+		objects.push_back(new SimpleObjectRect(XZ_RECT, Vec3(0.0f, 1.0f, 0.0f), 2.0f, 2.0f, TRUE, m_resources->GetTheMesh(MESH_ID_QUAD), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN3), this));
+		objects.push_back(new SimpleObjectRect(XZ_RECT, Vec3(0.0f, -1.0f, 0.0f), 2.0f, 2.0f, FALSE, m_resources->GetTheMesh(MESH_ID_QUAD), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN3), this));
 
 		float height = 1.1f;
-		objects.push_back(new SimpleObjectCube(Vec3(-0.3f, -1.0f + height * 0.5f, 0.0f), Vec3(0.6f, height, 0.4f), m_resources->GetTheMesh(MESH_ID_HIGH_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN1), this));
+		objects.push_back(new SimpleObjectCube(Vec3(-0.3f, -1.0f + height * 0.5f, 0.0f), Vec3(0.6f, height, 0.4f), m_resources->GetTheMesh(MESH_ID_CUBE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN1), this));
 
-		m_lightSources = new LightSources(this, objects, Vec3(0.0f, 0.0f, 0.0f));
+		m_lightSources = new LightSources(this, objects, Vec3(0.7f, 0.7f, 0.7f));
 		camera->Initialize(Vec3(0.0f, 0.0f, 4.0f), Vec3(0.0f, 0.0f, 0.0f), 40.0f, 1.0f, 10000.0f, 0.0f, 10.0f, 1.0f);
 
 		break;
