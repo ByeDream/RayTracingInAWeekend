@@ -136,41 +136,33 @@ SimpleObjectRect::SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &c
 	, m_reverseFace(reverseFace)
 {
 	m_translation = center;
-	UINT aAxisIndex, bAxisIndex, cAxisIndex;
+	m_scaling = Vec3(width, height, 1.0f);
+	m_mesh = mesh;
+	m_material = material;
+	m_world = world;
+
+	UINT aAxisIndex, bAxisIndex;
 	switch (m_alignAxes)
 	{
 	case XY_RECT:
 		aAxisIndex = 0;
 		bAxisIndex = 1;
-		cAxisIndex = 2;
 		break;
 	case XZ_RECT:
 		aAxisIndex = 0;
 		bAxisIndex = 2;
-		cAxisIndex = 1;
 		break;
 	default:
 		aAxisIndex = 2;
 		bAxisIndex = 1;
-		cAxisIndex = 0;
 		break;
 	}
 
-	m_scaling = Vec3(width, height, 1.0f);
-	//m_scale.set(aAxisIndex, width);
-	//m_scale.set(bAxisIndex, height);
-	//m_scale.set(cAxisIndex, 1.0f);
 	Vec3 half;
 	half.set(aAxisIndex, width / 2.0f);
 	half.set(bAxisIndex, height / 2.0f);
-
-	Vec3 _min = m_translation - half;
-	Vec3 _max = m_translation + half;
-	m_mesh = mesh;
-	m_material = material;
-	m_hitable = new AxisAlignedRectHitable(aAxisIndex, bAxisIndex, _min[aAxisIndex], _max[aAxisIndex], _min[bAxisIndex], _max[bAxisIndex], m_translation[cAxisIndex], m_reverseFace);
+	m_hitable = new TranslatedInstance(new AxisAlignedRectHitable(aAxisIndex, bAxisIndex, -half[aAxisIndex], half[aAxisIndex], -half[bAxisIndex], half[bAxisIndex], 0.0f, m_reverseFace), m_translation);
 	m_hitable->BindMaterial(material);
-	m_world = world;
 }
 
 void SimpleObjectRect::Update(SimpleCamera *camera, float elapsedSeconds)
@@ -244,18 +236,8 @@ SimpleObjectCube::SimpleObjectCube(const Vec3 &center, const Vec3 &size, Mesh *m
 	m_material = material;
 	m_world = world;
 
-	Vec3 _min = m_translation - m_scaling * 0.5f;
-	Vec3 _max = m_translation + m_scaling * 0.5f;
-
-
-	// to do, make it at center(0,0,0) and use translation
-// 	m_faceList[0] = new AxisAlignedRectHitable(0, 2, -0.5f, +0.5f, -0.5f, +0.5f, 0.5f, FALSE); // up
-// 	m_faceList[1] = new AxisAlignedRectHitable(0, 2, -0.5f, +0.5f, -0.5f, +0.5f, -0.5f, TRUE); // down
-// 	m_faceList[2] = new AxisAlignedRectHitable(0, 1, -0.5f, +0.5f, -0.5f, +0.5f, 0.5f, FALSE); // front
-// 	m_faceList[3] = new AxisAlignedRectHitable(0, 1, -0.5f, +0.5f, -0.5f, +0.5f, -0.5f, TRUE); // back
-// 	m_faceList[4] = new AxisAlignedRectHitable(2, 1, -0.5f, +0.5f, -0.5f, +0.5f, 0.5f, FALSE); // right
-// 	m_faceList[5] = new AxisAlignedRectHitable(2, 1, -0.5f, +0.5f, -0.5f, +0.5f, -0.5f, TRUE); // left
-
+	Vec3 _min = -size * 0.5f;
+	Vec3 _max = size * 0.5f;
 
 	m_faceList[0] = new AxisAlignedRectHitable(0, 2, _min.x(), _max.x(), _min.z(), _max.z(), _max.y(), FALSE); // up
 	m_faceList[1] = new AxisAlignedRectHitable(0, 2, _min.x(), _max.x(), _min.z(), _max.z(), _min.y(), TRUE); // down
@@ -264,7 +246,7 @@ SimpleObjectCube::SimpleObjectCube(const Vec3 &center, const Vec3 &size, Mesh *m
 	m_faceList[4] = new AxisAlignedRectHitable(2, 1, _min.z(), _max.z(), _min.y(), _max.y(), _max.x(), FALSE); // right
 	m_faceList[5] = new AxisAlignedRectHitable(2, 1, _min.z(), _max.z(), _min.y(), _max.y(), _min.x(), TRUE); // left
 
-	m_hitable = new HitableCombo(&m_faceList[0], 6);
+	m_hitable = new TranslatedInstance(new HitableCombo(&m_faceList[0], 6), m_translation);
 	m_hitable->BindMaterial(material);
 }
 
