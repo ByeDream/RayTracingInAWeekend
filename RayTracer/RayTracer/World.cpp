@@ -80,7 +80,8 @@ void World::ConstructWorld(WorldID wid, SimpleCamera *camera)
 		objects.push_back(new SimpleObjectRect(XZ_RECT, Vec3(0.0f, 1.0f, 0.0f), 2.0f, 2.0f, TRUE, m_resources->GetTheMesh(MESH_ID_HIGH_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN3), this));
 		objects.push_back(new SimpleObjectRect(XZ_RECT, Vec3(0.0f, -1.0f, 0.0f), 2.0f, 2.0f, FALSE, m_resources->GetTheMesh(MESH_ID_HIGH_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN3), this));
 
-
+		float height = 1.1f;
+		objects.push_back(new SimpleObjectCube(Vec3(-0.3f, -1.0f + height * 0.5f, 0.0f), Vec3(0.6f, height, 0.4f), m_resources->GetTheMesh(MESH_ID_HIGH_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN1), this));
 
 		m_lightSources = new LightSources(this, objects, Vec3(0.0f, 0.0f, 0.0f));
 		camera->Initialize(Vec3(0.0f, 0.0f, 4.0f), Vec3(0.0f, 0.0f, 0.0f), 40.0f, 1.0f, 10000.0f, 0.0f, 10.0f, 1.0f);

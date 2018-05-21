@@ -72,7 +72,6 @@ public:
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
 	virtual void				Render(D3D12Viewer *viewer, UINT32 mid) const override;
-	virtual BOOL				Hit(const Ray &r, float &t_min, float &t_max, HitRecord &out_rec) const override;
 	virtual AABB				BoundingBox() const override;
 	virtual void				BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle) override;
 
@@ -80,6 +79,22 @@ public:
 	Vec3						m_max;
 	SimpleObjectRectAlignAxes	m_alignAxes;
 	BOOL						m_reverseFace;
+};
+
+class SimpleObjectCube : public Object
+{
+public:
+	SimpleObjectCube(const Vec3 &center, const Vec3 &size, Mesh *mesh, IMaterial *material, World *world);
+	virtual ~SimpleObjectCube() override;
+
+	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
+	virtual void				Render(D3D12Viewer *viewer, UINT32 mid) const override;
+	virtual AABB				BoundingBox() const override;
+	virtual void				BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle) override;
+
+	Vec3						m_min;
+	Vec3						m_max;
+	IHitable *					m_faceList[6];
 };
 
 // TODO more

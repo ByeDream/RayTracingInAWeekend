@@ -71,8 +71,8 @@ void SphereHitable::CalculateUV(HitRecord &rec) const
 	rec.m_v = (phi + (float)M_PI / 2.0f) / (float)M_PI;
 }
 
-AxisAlignedRectHitable::AxisAlignedRectHitable(UINT32 aAxisIndex, UINT32 bAxisIndex, float a0, float a1, float b0, float b1, float c)
-	: m_a0(a0), m_a1(a1), m_b0(b0), m_b1(b1), m_c(c), m_aAxisIndex(aAxisIndex), m_bAxisIndex(bAxisIndex)
+AxisAlignedRectHitable::AxisAlignedRectHitable(UINT32 aAxisIndex, UINT32 bAxisIndex, float a0, float a1, float b0, float b1, float c, BOOL reverseFace)
+	: m_a0(a0), m_a1(a1), m_b0(b0), m_b1(b1), m_c(c), m_aAxisIndex(aAxisIndex), m_bAxisIndex(bAxisIndex), m_reverseFace(reverseFace)
 {
 	assert(m_aAxisIndex < 3 && m_bAxisIndex < 3 && m_aAxisIndex != m_bAxisIndex && "Invalid arguments");
 	m_cAxisIndex = (m_aAxisIndex == 0 ? (m_bAxisIndex == 1 ? 2 : 1) : (m_aAxisIndex == 1 ? (m_bAxisIndex == 0 ? 2 : 0) : (m_bAxisIndex == 1 ? 0 : 1)));
@@ -100,10 +100,32 @@ BOOL AxisAlignedRectHitable::Hit(const Ray &r, float t_min, float t_max, HitReco
 			out_rec.m_position = r.PointAt(t);
 			out_rec.m_normal.set(m_aAxisIndex, 0.0f);
 			out_rec.m_normal.set(m_bAxisIndex, 0.0f);
-			out_rec.m_normal.set(m_cAxisIndex, 1.0f);
+			out_rec.m_normal.set(m_cAxisIndex, m_reverseFace ? -1.0f : 1.0f);
 			return TRUE;
 		}
 	}
 
 	return FALSE;
+}
+
+BOOL HitableCombo::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const
+{
+	BOOL hitAnything = FALSE;
+	for (UINT32 i = 0; i < m_hitableCount; ++i)
+	{
+		if (m_hitableList[i]->Hit(r, t_min, t_max, out_rec))
+		{
+			t_max = out_rec.m_time; // closest so far
+			hitAnything = TRUE;
+		}
+	}
+	return hitAnything;
+}
+
+void HitableCombo::BindMaterial(IMaterial *m)
+{
+	for (UINT32 i = 0; i < m_hitableCount; ++i)
+	{
+		m_hitableList[i]->BindMaterial(m);
+	}
 }

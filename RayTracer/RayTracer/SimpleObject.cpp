@@ -169,7 +169,7 @@ SimpleObjectRect::SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &c
 	m_max = m_position + half;
 	//m_mesh = mesh;
 	m_material = material;
-	m_hitable = new AxisAlignedRectHitable(aAxisIndex, bAxisIndex, m_min[aAxisIndex], m_max[aAxisIndex], m_min[bAxisIndex], m_max[bAxisIndex], m_position[cAxisIndex]);
+	m_hitable = new AxisAlignedRectHitable(aAxisIndex, bAxisIndex, m_min[aAxisIndex], m_max[aAxisIndex], m_min[bAxisIndex], m_max[bAxisIndex], m_position[cAxisIndex], m_reverseFace);
 	m_hitable->BindMaterial(material);
 	m_world = world;
 }
@@ -184,20 +184,6 @@ void SimpleObjectRect::Render(D3D12Viewer *viewer, UINT32 mid) const
 	
 }
 
-BOOL SimpleObjectRect::Hit(const Ray &r, float &t_min, float &t_max, HitRecord &out_rec) const
-{
-	BOOL hitMe = FALSE;
-	if (m_hitable->Hit(r, t_min, t_max, out_rec))
-	{
-		t_max = out_rec.m_time;
-		if (m_reverseFace)
-			out_rec.m_normal = -out_rec.m_normal;
-		hitMe = TRUE;
-	}
-
-	return hitMe;
-}
-
 AABB SimpleObjectRect::BoundingBox() const
 {
 	return AABB(m_min, m_max);
@@ -206,6 +192,70 @@ AABB SimpleObjectRect::BoundingBox() const
 void SimpleObjectRect::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle)
 {
 	
+}
+
+SimpleObjectCube::SimpleObjectCube(const Vec3 &center, const Vec3 &size, Mesh *mesh, IMaterial *material, World *world)
+{
+	m_position = center;
+	m_scale = size;
+	m_mesh = mesh;
+	m_material = material;
+	m_world = world;
+
+	m_min = m_position - m_scale * 0.5f;
+	m_max = m_position + m_scale * 0.5f;
+
+
+	// to do, make it at center(0,0,0) and use translation
+// 	m_faceList[0] = new AxisAlignedRectHitable(0, 2, -0.5f, +0.5f, -0.5f, +0.5f, 0.5f, FALSE); // up
+// 	m_faceList[1] = new AxisAlignedRectHitable(0, 2, -0.5f, +0.5f, -0.5f, +0.5f, -0.5f, TRUE); // down
+// 	m_faceList[2] = new AxisAlignedRectHitable(0, 1, -0.5f, +0.5f, -0.5f, +0.5f, 0.5f, FALSE); // front
+// 	m_faceList[3] = new AxisAlignedRectHitable(0, 1, -0.5f, +0.5f, -0.5f, +0.5f, -0.5f, TRUE); // back
+// 	m_faceList[4] = new AxisAlignedRectHitable(2, 1, -0.5f, +0.5f, -0.5f, +0.5f, 0.5f, FALSE); // right
+// 	m_faceList[5] = new AxisAlignedRectHitable(2, 1, -0.5f, +0.5f, -0.5f, +0.5f, -0.5f, TRUE); // left
+
+
+	m_faceList[0] = new AxisAlignedRectHitable(0, 2, m_min.x(), m_max.x(), m_min.z(), m_max.z(), m_max.y(), FALSE); // up
+	m_faceList[1] = new AxisAlignedRectHitable(0, 2, m_min.x(), m_max.x(), m_min.z(), m_max.z(), m_min.y(), TRUE); // down
+	m_faceList[2] = new AxisAlignedRectHitable(0, 1, m_min.x(), m_max.x(), m_min.y(), m_max.y(), m_max.z(), FALSE); // front
+	m_faceList[3] = new AxisAlignedRectHitable(0, 1, m_min.x(), m_max.x(), m_min.y(), m_max.y(), m_min.z(), TRUE); // back
+	m_faceList[4] = new AxisAlignedRectHitable(2, 1, m_min.z(), m_max.z(), m_min.y(), m_max.y(), m_max.x(), FALSE); // right
+	m_faceList[5] = new AxisAlignedRectHitable(2, 1, m_min.z(), m_max.z(), m_min.y(), m_max.y(), m_min.x(), TRUE); // left
+
+	m_hitable = new HitableCombo(&m_faceList[0], 6);
+	m_hitable->BindMaterial(material);
+}
+
+SimpleObjectCube::~SimpleObjectCube()
+{
+	for (UINT32 i = 0; i < 6; ++i)
+	{
+		if (m_faceList[i])
+		{
+			delete m_faceList[i];
+			m_faceList[i] = nullptr;
+		}
+	}
+}
+
+void SimpleObjectCube::Update(SimpleCamera *camera, float elapsedSeconds)
+{
+
+}
+
+void SimpleObjectCube::Render(D3D12Viewer *viewer, UINT32 mid) const
+{
+
+}
+
+AABB SimpleObjectCube::BoundingBox() const
+{
+	return AABB(m_min, m_max);
+}
+
+void SimpleObjectCube::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle)
+{
+
 }
 
 SimpleObjectBVHNode::SimpleObjectBVHNode(std::vector<Object *> objects)
@@ -340,3 +390,4 @@ void SimpleObjectBVHNode::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTO
 		rightChild->BuildD3DRes(viewer, cbvCPUHandle, cbvGPUHandle);
 	}
 }
+

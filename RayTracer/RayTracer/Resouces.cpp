@@ -60,13 +60,13 @@ void Resources::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &
 
 Mesh *Resources::GetTheMesh(MeshUniqueID id) const
 {
-	assert(id > 0 && id < m_meshes.size());
+	assert(id >= 0 && id < m_meshes.size());
 	return m_meshes[id];
 }
 
 IMaterial *Resources::GetTheMaterial(MaterialUniqueID id) const
 {
-	assert(id > 0 && id < m_materials.size());
+	assert(id >= 0 && id < m_materials.size());
 	return m_materials[id];
 }
 
