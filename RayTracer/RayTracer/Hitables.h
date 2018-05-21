@@ -71,15 +71,34 @@ public:
 };
 
 // Transformed Instances
-class TranslatedInstance : public IHitable
+class TransformedInstance : public IHitable
 {
 public:
 	IHitable *					m_hitable;
+
+	TransformedInstance(IHitable *hitable) : m_hitable(hitable) {}
+	virtual	~TransformedInstance() { if (m_hitable) delete m_hitable; }
+	virtual void				BindMaterial(IMaterial *m) override { if (m_hitable) m_hitable->BindMaterial(m); }
+};
+
+class TranslatedInstance : public TransformedInstance
+{
+public:
 	Vec3						m_offset;
 
-	TranslatedInstance(IHitable *hitable, const Vec3 &displacement) : m_hitable(hitable), m_offset(displacement) {}
-	virtual	~TranslatedInstance();
+	TranslatedInstance(IHitable *hitable, const Vec3 &displacement) : TransformedInstance(hitable), m_offset(displacement) {}
 	virtual BOOL				Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const override;
-	virtual void				BindMaterial(IMaterial *m) override;
 	virtual AABB				BoundingBox() const override;
+};
+
+class RotatedYInstance : public TransformedInstance
+{
+public:
+	float						m_sinTheta;
+	float						m_cosTheta;
+	AABB						m_boundingBox;
+
+	RotatedYInstance(IHitable *hitable, float angle);
+	virtual BOOL				Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const override;
+	virtual AABB				BoundingBox() const override { return m_boundingBox; }
 };

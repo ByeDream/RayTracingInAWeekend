@@ -246,7 +246,7 @@ SimpleObjectCube::SimpleObjectCube(const Vec3 &center, const Vec3 &size, Mesh *m
 	m_faceList[4] = new AxisAlignedRectHitable(2, 1, _min.z(), _max.z(), _min.y(), _max.y(), _max.x(), FALSE); // right
 	m_faceList[5] = new AxisAlignedRectHitable(2, 1, _min.z(), _max.z(), _min.y(), _max.y(), _min.x(), TRUE); // left
 
-	m_hitable = new TranslatedInstance(new HitableCombo(&m_faceList[0], 6), m_translation);
+	m_hitable = new TranslatedInstance(new RotatedYInstance( new HitableCombo(&m_faceList[0], 6), 3.14f / 4.0f), m_translation);
 	m_hitable->BindMaterial(material);
 }
 
