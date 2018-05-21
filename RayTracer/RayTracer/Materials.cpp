@@ -28,7 +28,8 @@ BOOL Lambertian::Scatter(const Ray &r_in, const HitRecord &rec, Vec3 &attenuatio
 	Vec3 target = rec.m_position + rec.m_normal + Randomizer::RomdomInUnitSphere();
 	r_scattered = Ray(rec.m_position, target - rec.m_position);
 	attenuation = m_albedo->Sample(rec.m_u, rec.m_v);
-	return TRUE; // always
+	//return TRUE;
+	return (dot(r_in.m_dir, rec.m_normal) < 0); // absorb the scatter ray if the incident ray is below the surface
 }
 
 
