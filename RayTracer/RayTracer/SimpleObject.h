@@ -30,8 +30,8 @@ public:
 	virtual ~Object();
 	World *						m_world{ nullptr };
 
-	Vec3						m_position;
-	Vec3						m_scale;
+	Vec3						m_translation;
+	Vec3						m_scaling;
 	// TODO for rotation
 
 	Mesh *						m_mesh{ nullptr };
@@ -42,7 +42,7 @@ public:
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) = 0;
 	virtual void				Render(D3D12Viewer *viewer, UINT32 mid) const;
-	virtual AABB				BoundingBox() const = 0; // return bool as some object doesn't have bounding-box like a plane
+	virtual AABB				BoundingBox() const;
 	virtual BOOL				Hit(const Ray &r, float &t_min, float &t_max, HitRecord &out_rec) const;
 	virtual void				BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbvCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE &cbvGPUHandle);
 };
@@ -50,10 +50,9 @@ public:
 class SimpleObjectSphere : public Object
 {
 public:
-	SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world);
+	SimpleObjectSphere(float radius, Mesh *mesh, IMaterial *material, World *world, const Vec3 &translation);
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
-	virtual AABB				BoundingBox() const override;
 };
 
 enum SimpleObjectRectAlignAxes
@@ -69,10 +68,7 @@ public:
 	SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &center, float width, float height, BOOL reverseFace, Mesh *mesh, IMaterial *material, World *world);
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
-	virtual AABB				BoundingBox() const override;
 
-	Vec3						m_min;
-	Vec3						m_max;
 	SimpleObjectRectAlignAxes	m_alignAxes;
 	BOOL						m_reverseFace;
 };
@@ -84,10 +80,7 @@ public:
 	virtual ~SimpleObjectCube() override;
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
-	virtual AABB				BoundingBox() const override;
 
-	Vec3						m_min;
-	Vec3						m_max;
 	IHitable *					m_faceList[6];
 };
 

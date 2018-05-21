@@ -96,9 +96,6 @@
     <ClInclude Include="SimpleMotion.h">
       <Filter>Source\3DScene</Filter>
     </ClInclude>
-    <ClInclude Include="AABB.h">
-      <Filter>Source\3DScene</Filter>
-    </ClInclude>
     <ClInclude Include="SimpleTexture2D.h">
       <Filter>Source\3DScene</Filter>
     </ClInclude>
@@ -122,6 +119,9 @@
     </ClInclude>
     <ClInclude Include="Resouces.h">
       <Filter>Source\3DScene</Filter>
+    </ClInclude>
+    <ClInclude Include="AABB.h">
+      <Filter>Source\HMRayTracer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -167,9 +167,6 @@
     <ClCompile Include="SimpleMotion.cpp">
       <Filter>Source\3DScene</Filter>
     </ClCompile>
-    <ClCompile Include="AABB.cpp">
-      <Filter>Source\3DScene</Filter>
-    </ClCompile>
     <ClCompile Include="SimpleTexture2D.cpp">
       <Filter>Source\3DScene</Filter>
     </ClCompile>
@@ -187,6 +184,9 @@
     </ClCompile>
     <ClCompile Include="Resouces.cpp">
       <Filter>Source\3DScene</Filter>
+    </ClCompile>
+    <ClCompile Include="AABB.cpp">
+      <Filter>Source\HMRayTracer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

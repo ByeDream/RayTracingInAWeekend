@@ -51,7 +51,7 @@ void LightSources::Update(SimpleCamera *camera, float elapsedSeconds)
 		const Object *lightSource = m_lightSources[i];
 		const DiffuseLight *lightMtl = reinterpret_cast<const DiffuseLight *>(lightSource->m_material);
 
-		XMVECTOR lightPosWorld = DirectX::XMVectorSet(lightSource->m_position.x(), lightSource->m_position.y(), lightSource->m_position.z(), 1.0f);
+		XMVECTOR lightPosWorld = DirectX::XMVectorSet(lightSource->m_translation.x(), lightSource->m_translation.y(), lightSource->m_translation.z(), 1.0f);
 		XMVECTOR lightPosView = DirectX::XMVector4Transform(lightPosWorld, camera->GetViewMatrix());
 
 		DirectX::XMStoreFloat4(&lightConstants.lightPositionView, lightPosView);

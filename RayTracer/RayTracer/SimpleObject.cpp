@@ -40,6 +40,11 @@ void Object::Render(D3D12Viewer *viewer, UINT32 mid) const
 	}
 }
 
+AABB Object::BoundingBox() const
+{
+	return m_hitable->BoundingBox();
+}
+
 BOOL Object::Hit(const Ray &r, float &t_min, float &t_max, HitRecord &out_rec) const
 {
 	BOOL hitMe = FALSE;
@@ -96,13 +101,13 @@ void Object::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbv
 	}
 }
 
-SimpleObjectSphere::SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world)
+SimpleObjectSphere::SimpleObjectSphere(float radius, Mesh *mesh, IMaterial *material, World *world, const Vec3 &translation)
 {
-	m_position = center;
-	m_scale = Vec3(radius, radius, radius);
+	m_translation = translation;
+	m_scaling = Vec3(radius, radius, radius);
 	m_mesh = mesh;
 	m_material = material;
-	m_hitable = new SphereHitable(center, radius);
+	m_hitable = new TranslatedInstance(new SphereHitable(radius), m_translation);
 	m_hitable->BindMaterial(material);
 	m_world = world;
 }
@@ -115,8 +120,8 @@ void SimpleObjectSphere::Update(SimpleCamera *camera, float elapsedSeconds)
 	XMMATRIX mv;
 	GeometryConstants geoConstants;
 
-	trans = DirectX::XMMatrixTranslationFromVector(m_position.m_simd);
-	scale = DirectX::XMMatrixScalingFromVector(m_scale.m_simd);
+	trans = DirectX::XMMatrixTranslationFromVector(m_translation.m_simd);
+	scale = DirectX::XMMatrixScalingFromVector(m_scaling.m_simd);
 	mv = scale * trans * camera->GetViewMatrix();
 	// Compute the model-view-projection matrix.
 	DirectX::XMStoreFloat4x4(&geoConstants.worldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
@@ -126,16 +131,11 @@ void SimpleObjectSphere::Update(SimpleCamera *camera, float elapsedSeconds)
 	memcpy(m_d3dRes.m_pGeoConstants + m_d3dRes.m_GeoConstantBufferSize * m_world->GetFrameIndex(), &geoConstants, sizeof(GeometryConstants));
 }
 
-AABB SimpleObjectSphere::BoundingBox() const
-{
-	return AABB(m_position - m_scale, m_position + m_scale);
-}
-
 SimpleObjectRect::SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &center, float width, float height, BOOL reverseFace, Mesh *mesh, IMaterial *material, World *world)
 	: m_alignAxes(axes)
 	, m_reverseFace(reverseFace)
 {
-	m_position = center;
+	m_translation = center;
 	UINT aAxisIndex, bAxisIndex, cAxisIndex;
 	switch (m_alignAxes)
 	{
@@ -156,20 +156,19 @@ SimpleObjectRect::SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &c
 		break;
 	}
 
-	m_scale = Vec3(width, height, 1.0f);
+	m_scaling = Vec3(width, height, 1.0f);
 	//m_scale.set(aAxisIndex, width);
 	//m_scale.set(bAxisIndex, height);
 	//m_scale.set(cAxisIndex, 1.0f);
 	Vec3 half;
 	half.set(aAxisIndex, width / 2.0f);
 	half.set(bAxisIndex, height / 2.0f);
-	half.set(cAxisIndex, 0.0001f);
 
-	m_min = m_position - half;
-	m_max = m_position + half;
+	Vec3 _min = m_translation - half;
+	Vec3 _max = m_translation + half;
 	m_mesh = mesh;
 	m_material = material;
-	m_hitable = new AxisAlignedRectHitable(aAxisIndex, bAxisIndex, m_min[aAxisIndex], m_max[aAxisIndex], m_min[bAxisIndex], m_max[bAxisIndex], m_position[cAxisIndex], m_reverseFace);
+	m_hitable = new AxisAlignedRectHitable(aAxisIndex, bAxisIndex, _min[aAxisIndex], _max[aAxisIndex], _min[bAxisIndex], _max[bAxisIndex], m_translation[cAxisIndex], m_reverseFace);
 	m_hitable->BindMaterial(material);
 	m_world = world;
 }
@@ -225,8 +224,8 @@ void SimpleObjectRect::Update(SimpleCamera *camera, float elapsedSeconds)
 	XMMATRIX    XM_CALLCONV     XMMatrixRotationZ(float Angle);
 	*/
 
-	trans = DirectX::XMMatrixTranslationFromVector(m_position.m_simd);
-	scale = DirectX::XMMatrixScalingFromVector(m_scale.m_simd);
+	trans = DirectX::XMMatrixTranslationFromVector(m_translation.m_simd);
+	scale = DirectX::XMMatrixScalingFromVector(m_scaling.m_simd);
 	mv = scale * rotate * trans * camera->GetViewMatrix();
 	// Compute the model-view-projection matrix.
 	DirectX::XMStoreFloat4x4(&geoConstants.worldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
@@ -237,21 +236,16 @@ void SimpleObjectRect::Update(SimpleCamera *camera, float elapsedSeconds)
 
 }
 
-AABB SimpleObjectRect::BoundingBox() const
-{
-	return AABB(m_min, m_max);
-}
-
 SimpleObjectCube::SimpleObjectCube(const Vec3 &center, const Vec3 &size, Mesh *mesh, IMaterial *material, World *world)
 {
-	m_position = center;
-	m_scale = size;
+	m_translation = center;
+	m_scaling = size;
 	m_mesh = mesh;
 	m_material = material;
 	m_world = world;
 
-	m_min = m_position - m_scale * 0.5f;
-	m_max = m_position + m_scale * 0.5f;
+	Vec3 _min = m_translation - m_scaling * 0.5f;
+	Vec3 _max = m_translation + m_scaling * 0.5f;
 
 
 	// to do, make it at center(0,0,0) and use translation
@@ -263,12 +257,12 @@ SimpleObjectCube::SimpleObjectCube(const Vec3 &center, const Vec3 &size, Mesh *m
 // 	m_faceList[5] = new AxisAlignedRectHitable(2, 1, -0.5f, +0.5f, -0.5f, +0.5f, -0.5f, TRUE); // left
 
 
-	m_faceList[0] = new AxisAlignedRectHitable(0, 2, m_min.x(), m_max.x(), m_min.z(), m_max.z(), m_max.y(), FALSE); // up
-	m_faceList[1] = new AxisAlignedRectHitable(0, 2, m_min.x(), m_max.x(), m_min.z(), m_max.z(), m_min.y(), TRUE); // down
-	m_faceList[2] = new AxisAlignedRectHitable(0, 1, m_min.x(), m_max.x(), m_min.y(), m_max.y(), m_max.z(), FALSE); // front
-	m_faceList[3] = new AxisAlignedRectHitable(0, 1, m_min.x(), m_max.x(), m_min.y(), m_max.y(), m_min.z(), TRUE); // back
-	m_faceList[4] = new AxisAlignedRectHitable(2, 1, m_min.z(), m_max.z(), m_min.y(), m_max.y(), m_max.x(), FALSE); // right
-	m_faceList[5] = new AxisAlignedRectHitable(2, 1, m_min.z(), m_max.z(), m_min.y(), m_max.y(), m_min.x(), TRUE); // left
+	m_faceList[0] = new AxisAlignedRectHitable(0, 2, _min.x(), _max.x(), _min.z(), _max.z(), _max.y(), FALSE); // up
+	m_faceList[1] = new AxisAlignedRectHitable(0, 2, _min.x(), _max.x(), _min.z(), _max.z(), _min.y(), TRUE); // down
+	m_faceList[2] = new AxisAlignedRectHitable(0, 1, _min.x(), _max.x(), _min.y(), _max.y(), _max.z(), FALSE); // front
+	m_faceList[3] = new AxisAlignedRectHitable(0, 1, _min.x(), _max.x(), _min.y(), _max.y(), _min.z(), TRUE); // back
+	m_faceList[4] = new AxisAlignedRectHitable(2, 1, _min.z(), _max.z(), _min.y(), _max.y(), _max.x(), FALSE); // right
+	m_faceList[5] = new AxisAlignedRectHitable(2, 1, _min.z(), _max.z(), _min.y(), _max.y(), _min.x(), TRUE); // left
 
 	m_hitable = new HitableCombo(&m_faceList[0], 6);
 	m_hitable->BindMaterial(material);
@@ -294,8 +288,8 @@ void SimpleObjectCube::Update(SimpleCamera *camera, float elapsedSeconds)
 	XMMATRIX mv;
 	GeometryConstants geoConstants;
 
-	trans = DirectX::XMMatrixTranslationFromVector(m_position.m_simd);
-	scale = DirectX::XMMatrixScalingFromVector(m_scale.m_simd);
+	trans = DirectX::XMMatrixTranslationFromVector(m_translation.m_simd);
+	scale = DirectX::XMMatrixScalingFromVector(m_scaling.m_simd);
 	mv = scale * trans * camera->GetViewMatrix();
 	// Compute the model-view-projection matrix.
 	DirectX::XMStoreFloat4x4(&geoConstants.worldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
@@ -303,12 +297,6 @@ void SimpleObjectCube::Update(SimpleCamera *camera, float elapsedSeconds)
 
 	// Copy this matrix into the appropriate location in the geo constant buffer.
 	memcpy(m_d3dRes.m_pGeoConstants + m_d3dRes.m_GeoConstantBufferSize * m_world->GetFrameIndex(), &geoConstants, sizeof(GeometryConstants));
-
-}
-
-AABB SimpleObjectCube::BoundingBox() const
-{
-	return AABB(m_min, m_max);
 }
 
 SimpleObjectBVHNode::SimpleObjectBVHNode(std::vector<Object *> objects)
@@ -318,11 +306,11 @@ SimpleObjectBVHNode::SimpleObjectBVHNode(std::vector<Object *> objects)
 	// sort objects with order
 	UINT32 axis = UINT32(3 * Randomizer::RandomUNorm());
 	if (axis == 0)
-		sort(objects.begin(), objects.end(), [](Object * a, Object * b) { return b->m_position.x() < a->m_position.x(); });
+		sort(objects.begin(), objects.end(), [](Object * a, Object * b) { return b->m_translation.x() < a->m_translation.x(); });
 	else if(axis == 1)
-		sort(objects.begin(), objects.end(), [](Object * a, Object * b) { return b->m_position.y() < a->m_position.y(); });
+		sort(objects.begin(), objects.end(), [](Object * a, Object * b) { return b->m_translation.y() < a->m_translation.y(); });
 	else
-		sort(objects.begin(), objects.end(), [](Object * a, Object * b) { return b->m_position.z() < a->m_position.z(); });
+		sort(objects.begin(), objects.end(), [](Object * a, Object * b) { return b->m_translation.z() < a->m_translation.z(); });
 
 	// divide into two
 	vector<Object *>::size_type fullsize = objects.size();

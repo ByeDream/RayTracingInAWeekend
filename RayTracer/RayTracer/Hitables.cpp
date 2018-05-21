@@ -3,9 +3,8 @@
 
 #include "Ray.h"
 
-SphereHitable::SphereHitable(const Vec3 &center, float radius)
-	: m_center(center)
-	, m_radius(radius)
+SphereHitable::SphereHitable(float radius)
+	: m_radius(radius)
 {
 
 }
@@ -17,10 +16,9 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 	// dot((t * dir) + (org - center), (t * dir) + (org - center)) - radius * radius = 0
 	// dot(t * dir, t * dir) + 2 * dot(t * dir, org - center) + dot(org - center, org - center) - radius * radius = 0
 	// t * t * dot(dir, dir) + 2 * t * dot(dir, org - center) + dot(org - cebter, org - cebter) - radius * radius = 0
-	Vec3 oc = r.m_org - m_center;
 	float a = dot(r.m_dir, r.m_dir);
-	float b = 2.0f * dot(r.m_dir, oc);
-	float c = dot(oc, oc) - m_radius * m_radius;
+	float b = 2.0f * dot(r.m_dir, r.m_org);
+	float c = dot(r.m_org, r.m_org) - m_radius * m_radius;
 
 	float discriminant = b * b - 4 * a * c;
 
@@ -34,7 +32,7 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 		{
 			out_rec.m_time = t;
 			out_rec.m_position = r.PointAt(t);
-			out_rec.m_normal = (out_rec.m_position - m_center) / m_radius; // same as normalize, cos the length is know as m_radius
+			out_rec.m_normal = out_rec.m_position / m_radius; // same as normalize, cos the length is know as m_radius
 			out_rec.m_hitMaterial = m_material;
 			CalculateUV(out_rec);
 			return TRUE; // the nearest hitting on ray direction
@@ -44,7 +42,7 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 		{
 			out_rec.m_time = t;
 			out_rec.m_position = r.PointAt(t);
-			out_rec.m_normal = (out_rec.m_position - m_center) / m_radius; // same as normalize, cos the length is know as m_radius
+			out_rec.m_normal = out_rec.m_position / m_radius; // same as normalize, cos the length is know as m_radius
 			out_rec.m_hitMaterial = m_material;
 			CalculateUV(out_rec);
 			return TRUE; // the farthest hitting on ray direction
@@ -53,10 +51,16 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 	return FALSE; // no hit
 }
 
+AABB SphereHitable::BoundingBox() const
+{
+	Vec3 radius(m_radius, m_radius, m_radius);
+	return AABB(-radius, radius);
+}
+
 void SphereHitable::CalculateUV(HitRecord &rec) const
 {
 	// hit point in model space
-	Vec3 p = rec.m_position - m_center;
+	Vec3 p = rec.m_position;
 	p.normalize();
 
 	float theta = atan2(p.z(), p.x());
@@ -108,6 +112,19 @@ BOOL AxisAlignedRectHitable::Hit(const Ray &r, float t_min, float t_max, HitReco
 	return FALSE;
 }
 
+AABB AxisAlignedRectHitable::BoundingBox() const
+{
+	Vec3 _min, _max;
+	_min.set(m_aAxisIndex, m_a0);
+	_max.set(m_aAxisIndex, m_a1);
+	_min.set(m_bAxisIndex, m_b0);
+	_max.set(m_bAxisIndex, m_b1);
+	_min.set(m_cAxisIndex, m_c - 0.0001f);
+	_max.set(m_cAxisIndex, m_c + 0.0001f);
+
+	return AABB(_min, _max);
+}
+
 BOOL HitableCombo::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const
 {
 	BOOL hitAnything = FALSE;
@@ -128,4 +145,49 @@ void HitableCombo::BindMaterial(IMaterial *m)
 	{
 		m_hitableList[i]->BindMaterial(m);
 	}
+}
+
+AABB HitableCombo::BoundingBox() const
+{
+	assert(m_hitableCount > 0);
+	AABB box = m_hitableList[0]->BoundingBox();
+	for (UINT32 i = 1; i < m_hitableCount; ++i)
+	{
+		box = CombineAABB(m_hitableList[i]->BoundingBox(), box);
+	}
+	return box;
+}
+
+TranslatedInstance::~TranslatedInstance()
+{
+	if (m_hitable)
+	{
+		delete m_hitable;
+		m_hitable = nullptr;
+	}
+}
+
+BOOL TranslatedInstance::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const
+{
+	BOOL hitMe = FALSE;
+	Ray moved_r(r.m_org - m_offset, r.m_dir);
+	if (m_hitable->Hit(moved_r, t_min, t_max, out_rec))
+	{
+		out_rec.m_position += m_offset;
+		hitMe = TRUE;
+	}
+	return hitMe;
+}
+
+void TranslatedInstance::BindMaterial(IMaterial *m)
+{
+	if (m_hitable)
+		m_hitable->BindMaterial(m);
+}
+
+AABB TranslatedInstance::BoundingBox() const
+{
+	AABB box = m_hitable->BoundingBox();
+	box = AABB(box.m_min + m_offset, box.m_max + m_offset);
+	return box;
 }

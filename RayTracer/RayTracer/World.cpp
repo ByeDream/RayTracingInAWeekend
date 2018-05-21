@@ -25,12 +25,12 @@ void World::ConstructWorld(WorldID wid, SimpleCamera *camera)
 	case WORLD_ID_RANDOM_SPHERES:
 	{
 		// ground
-		objects.push_back(new SimpleObjectSphere(Vec3(0.0f, -1000.0f, -0.0f), 1000.0f, m_resources->GetTheMesh(MESH_ID_HIGH_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN0), this));
+		objects.push_back(new SimpleObjectSphere(1000.0f, m_resources->GetTheMesh(MESH_ID_HIGH_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN0), this, Vec3(0.0f, -1000.0f, -0.0f)));
 
 		// bigger spheres
-		objects.push_back(new SimpleObjectSphere(Vec3(-4.0f, 1.0f, 0.0f), 1.0f, m_resources->GetTheMesh(MESH_ID_MEDIUM_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN1), this));
-		objects.push_back(new SimpleObjectSphere(Vec3(0.0f, 1.0f, 0.0f), 1.0f, m_resources->GetTheMesh(MESH_ID_MEDIUM_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_DIELECTRIC), this));
-		objects.push_back(new SimpleObjectSphere(Vec3(4.0f, 1.0f, 0.0f), 1.0f, m_resources->GetTheMesh(MESH_ID_MEDIUM_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_METAL), this));
+		objects.push_back(new SimpleObjectSphere(1.0f, m_resources->GetTheMesh(MESH_ID_MEDIUM_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN1), this, Vec3(-4.0f, 1.0f, 0.0f)));
+		objects.push_back(new SimpleObjectSphere(1.0f, m_resources->GetTheMesh(MESH_ID_MEDIUM_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_DIELECTRIC), this, Vec3(0.0f, 1.0f, 0.0f)));
+		objects.push_back(new SimpleObjectSphere(1.0f, m_resources->GetTheMesh(MESH_ID_MEDIUM_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_METAL), this, Vec3(4.0f, 1.0f, 0.0f)));
 
 		// random smaller spheres
 #if 1
@@ -54,7 +54,7 @@ void World::ConstructWorld(WorldID wid, SimpleCamera *camera)
 						materialID = (MaterialUniqueID)(UINT32)(MATERIAL_ID_RANDOM_METAL_START + Randomizer::RandomUNorm() * MATERIAL_ID_RANDOM_METAL_COUNT);
 					}
 
-					objects.push_back(new SimpleObjectSphere(center, 0.2f, m_resources->GetTheMesh(MESH_ID_LOW_POLYGON_SPHERE), m_resources->GetTheMaterial(materialID), this));
+					objects.push_back(new SimpleObjectSphere(0.2f, m_resources->GetTheMesh(MESH_ID_LOW_POLYGON_SPHERE), m_resources->GetTheMaterial(materialID), this, center));
 				}
 			}
 		}
@@ -83,7 +83,7 @@ void World::ConstructWorld(WorldID wid, SimpleCamera *camera)
 		float height = 1.1f;
 		objects.push_back(new SimpleObjectCube(Vec3(-0.3f, -1.0f + height * 0.5f, 0.0f), Vec3(0.6f, height, 0.4f), m_resources->GetTheMesh(MESH_ID_CUBE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN1), this));
 
-		m_lightSources = new LightSources(this, objects, Vec3(0.7f, 0.7f, 0.7f));
+		m_lightSources = new LightSources(this, objects, Vec3(0.0f, 0.0f, 0.0f));
 		camera->Initialize(Vec3(0.0f, 0.0f, 4.0f), Vec3(0.0f, 0.0f, 0.0f), 40.0f, 1.0f, 10000.0f, 0.0f, 10.0f, 1.0f);
 
 		break;
