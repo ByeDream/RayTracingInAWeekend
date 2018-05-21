@@ -3,8 +3,9 @@
 
 #include "Ray.h"
 
-SphereHitable::SphereHitable(float radius)
-	: m_radius(radius)
+SphereHitable::SphereHitable(const Vec3 &center, float radius)
+	: m_center(center)
+	, m_radius(radius)
 {
 
 }
@@ -16,9 +17,10 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 	// dot((t * dir) + (org - center), (t * dir) + (org - center)) - radius * radius = 0
 	// dot(t * dir, t * dir) + 2 * dot(t * dir, org - center) + dot(org - center, org - center) - radius * radius = 0
 	// t * t * dot(dir, dir) + 2 * t * dot(dir, org - center) + dot(org - cebter, org - cebter) - radius * radius = 0
+	Vec3 oc = r.m_org - m_center;
 	float a = dot(r.m_dir, r.m_dir);
-	float b = 2.0f * dot(r.m_dir, r.m_org);
-	float c = dot(r.m_org, r.m_org) - m_radius * m_radius;
+	float b = 2.0f * dot(r.m_dir, oc);
+	float c = dot(oc, oc) - m_radius * m_radius;
 
 	float discriminant = b * b - 4 * a * c;
 
@@ -32,7 +34,7 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 		{
 			out_rec.m_time = t;
 			out_rec.m_position = r.PointAt(t);
-			out_rec.m_normal = out_rec.m_position / m_radius; // same as normalize, cos the length is know as m_radius
+			out_rec.m_normal = (out_rec.m_position - m_center) / m_radius; // same as normalize, cos the length is know as m_radius
 			out_rec.m_hitMaterial = m_material;
 			CalculateUV(out_rec);
 			return TRUE; // the nearest hitting on ray direction
@@ -42,7 +44,7 @@ BOOL SphereHitable::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_r
 		{
 			out_rec.m_time = t;
 			out_rec.m_position = r.PointAt(t);
-			out_rec.m_normal = out_rec.m_position / m_radius; // same as normalize, cos the length is know as m_radius
+			out_rec.m_normal = (out_rec.m_position - m_center) / m_radius; // same as normalize, cos the length is know as m_radius
 			out_rec.m_hitMaterial = m_material;
 			CalculateUV(out_rec);
 			return TRUE; // the farthest hitting on ray direction
@@ -60,7 +62,7 @@ AABB SphereHitable::BoundingBox() const
 void SphereHitable::CalculateUV(HitRecord &rec) const
 {
 	// hit point in model space
-	Vec3 p = rec.m_position;
+	Vec3 p = rec.m_position - m_center;
 	p.normalize();
 
 	float theta = atan2(p.z(), p.x());

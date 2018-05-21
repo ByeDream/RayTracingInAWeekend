@@ -32,9 +32,10 @@ public:
 class SphereHitable : public IHitable
 {
 public:
+	Vec3						m_center;
 	float						m_radius;
 
-	SphereHitable(float radius);
+	SphereHitable(const Vec3 &center, float radius);
 	virtual BOOL				Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const override;
 	virtual AABB				BoundingBox() const override;
 

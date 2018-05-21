@@ -25,12 +25,12 @@ void World::ConstructWorld(WorldID wid, SimpleCamera *camera)
 	case WORLD_ID_RANDOM_SPHERES:
 	{
 		// ground
-		objects.push_back(new SimpleObjectSphere(1000.0f, m_resources->GetTheMesh(MESH_ID_HIGH_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN0), this, Vec3(0.0f, -1000.0f, -0.0f)));
+		objects.push_back(new SimpleObjectSphere(Vec3(0.0f, -1000.0f, -0.0f), 1000.0f, m_resources->GetTheMesh(MESH_ID_HIGH_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN0), this));
 
 		// bigger spheres
-		objects.push_back(new SimpleObjectSphere(1.0f, m_resources->GetTheMesh(MESH_ID_MEDIUM_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN1), this, Vec3(-4.0f, 1.0f, 0.0f)));
-		objects.push_back(new SimpleObjectSphere(1.0f, m_resources->GetTheMesh(MESH_ID_MEDIUM_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_DIELECTRIC), this, Vec3(0.0f, 1.0f, 0.0f)));
-		objects.push_back(new SimpleObjectSphere(1.0f, m_resources->GetTheMesh(MESH_ID_MEDIUM_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_METAL), this, Vec3(4.0f, 1.0f, 0.0f)));
+		objects.push_back(new SimpleObjectSphere(Vec3(-4.0f, 1.0f, 0.0f), 1.0f, m_resources->GetTheMesh(MESH_ID_MEDIUM_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_LAMBERTIAN1), this));
+		objects.push_back(new SimpleObjectSphere(Vec3(0.0f, 1.0f, 0.0f), 1.0f, m_resources->GetTheMesh(MESH_ID_MEDIUM_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_DIELECTRIC), this));
+		objects.push_back(new SimpleObjectSphere(Vec3(4.0f, 1.0f, 0.0f), 1.0f, m_resources->GetTheMesh(MESH_ID_MEDIUM_POLYGON_SPHERE), m_resources->GetTheMaterial(MATERIAL_ID_METAL), this));
 
 		// random smaller spheres
 #if 1
@@ -54,7 +54,7 @@ void World::ConstructWorld(WorldID wid, SimpleCamera *camera)
 						materialID = (MaterialUniqueID)(UINT32)(MATERIAL_ID_RANDOM_METAL_START + Randomizer::RandomUNorm() * MATERIAL_ID_RANDOM_METAL_COUNT);
 					}
 
-					objects.push_back(new SimpleObjectSphere(0.2f, m_resources->GetTheMesh(MESH_ID_LOW_POLYGON_SPHERE), m_resources->GetTheMaterial(materialID), this, center));
+					objects.push_back(new SimpleObjectSphere(center, 0.2f, m_resources->GetTheMesh(MESH_ID_LOW_POLYGON_SPHERE), m_resources->GetTheMaterial(materialID), this));
 				}
 			}
 		}

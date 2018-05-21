@@ -101,13 +101,13 @@ void Object::BuildD3DRes(D3D12Viewer *viewer, CD3DX12_CPU_DESCRIPTOR_HANDLE &cbv
 	}
 }
 
-SimpleObjectSphere::SimpleObjectSphere(float radius, Mesh *mesh, IMaterial *material, World *world, const Vec3 &translation)
+SimpleObjectSphere::SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world)
 {
-	m_translation = translation;
+	m_translation = center;
 	m_scaling = Vec3(radius, radius, radius);
 	m_mesh = mesh;
 	m_material = material;
-	m_hitable = new TranslatedInstance(new SphereHitable(radius), m_translation);
+	m_hitable = new TranslatedInstance(new SphereHitable(Vec3(0.0f, 0.0f, 0.0f),radius), m_translation);
 	m_hitable->BindMaterial(material);
 	m_world = world;
 }

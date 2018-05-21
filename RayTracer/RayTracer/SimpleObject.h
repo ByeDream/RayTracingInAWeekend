@@ -50,7 +50,7 @@ public:
 class SimpleObjectSphere : public Object
 {
 public:
-	SimpleObjectSphere(float radius, Mesh *mesh, IMaterial *material, World *world, const Vec3 &translation);
+	SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world);
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
 };
