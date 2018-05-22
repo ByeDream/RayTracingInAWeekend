@@ -9,7 +9,7 @@
 #include "std_cbuffer.h"
 
 #define AMBIENT_INTENSITY_ATTENUATION 0.8f // to simulate global attenuation of indirect light
-#define LIGHT_INTENSITY_SCALE 0.5f // as we use diffierent unit definition
+#define LIGHT_INTENSITY_SCALE 0.4f // as we use different unit definition
 
 LightSources::LightSources(World *world, std::vector<Object *> &objects, const Vec3 &ambientLight)
 	: m_world(world)

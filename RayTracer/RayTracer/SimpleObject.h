@@ -32,6 +32,7 @@ public:
 
 	Vec3						m_translation;
 	Vec3						m_scaling;
+	Vec3						m_rotation;
 	// TODO for rotation
 
 	Mesh *						m_mesh{ nullptr };
@@ -40,7 +41,7 @@ public:
 
 	ObjectD3D12Resources		m_d3dRes;
 
-	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) = 0;
+	virtual void				Update(SimpleCamera *camera, float elapsedSeconds);
 	virtual void				Render(D3D12Viewer *viewer, UINT32 mid) const;
 	virtual AABB				BoundingBox() const;
 	virtual BOOL				Hit(const Ray &r, float &t_min, float &t_max, HitRecord &out_rec) const;
@@ -51,8 +52,6 @@ class SimpleObjectSphere : public Object
 {
 public:
 	SimpleObjectSphere(const Vec3 &center, float radius, Mesh *mesh, IMaterial *material, World *world);
-
-	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
 };
 
 enum SimpleObjectRectAlignAxes
@@ -65,7 +64,7 @@ enum SimpleObjectRectAlignAxes
 class SimpleObjectRect : public Object
 {
 public:
-	SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &center, float width, float height, BOOL reverseFace, Mesh *mesh, IMaterial *material, World *world);
+	SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &center, const Vec3 &rotation, float width, float height, BOOL reverseFace, Mesh *mesh, IMaterial *material, World *world);
 
 	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
 
@@ -76,10 +75,8 @@ public:
 class SimpleObjectCube : public Object
 {
 public:
-	SimpleObjectCube(const Vec3 &center, const Vec3 &size, Mesh *mesh, IMaterial *material, World *world);
+	SimpleObjectCube(const Vec3 &center, const Vec3 &rotation, const Vec3 &size, Mesh *mesh, IMaterial *material, World *world);
 	virtual ~SimpleObjectCube() override;
-
-	virtual void				Update(SimpleCamera *camera, float elapsedSeconds) override;
 
 	IHitable *					m_faceList[6];
 };

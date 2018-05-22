@@ -91,14 +91,16 @@ public:
 	virtual AABB				BoundingBox() const override;
 };
 
-class RotatedYInstance : public TransformedInstance
+class RotatedInstance : public TransformedInstance
 {
 public:
 	float						m_sinTheta;
 	float						m_cosTheta;
 	AABB						m_boundingBox;
+	UINT32						m_aAxisIndex, m_bAxisIndex, m_cAxisIndex;
+	float						m_OP, m_oppositeOP;
 
-	RotatedYInstance(IHitable *hitable, float angle);
+	RotatedInstance(IHitable *hitable, float angle, UINT32 rotateAxis);
 	virtual BOOL				Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const override;
 	virtual AABB				BoundingBox() const override { return m_boundingBox; }
 };

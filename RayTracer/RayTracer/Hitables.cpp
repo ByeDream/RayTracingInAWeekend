@@ -179,11 +179,32 @@ AABB TranslatedInstance::BoundingBox() const
 	return box;
 }
 
-RotatedYInstance::RotatedYInstance(IHitable *hitable, float angle)
+RotatedInstance::RotatedInstance(IHitable *hitable, float angle, UINT32 rotateAxis)
 	: TransformedInstance(hitable)
 	, m_sinTheta(sinf(angle))
 	, m_cosTheta(cosf(angle))
+	, m_cAxisIndex(rotateAxis)
 {
+	switch (m_cAxisIndex)
+	{
+	case 0:
+		m_aAxisIndex = 1;
+		m_bAxisIndex = 2;
+		m_OP = -1.0f;
+		break;
+	case 1:
+		m_aAxisIndex = 0;
+		m_bAxisIndex = 2;
+		m_OP = 1.0f;
+		break;
+	default:
+		m_aAxisIndex = 0;
+		m_bAxisIndex = 1;
+		m_OP = -1.0f;
+		break;
+	}
+	m_oppositeOP = -m_OP;
+
 	// caculate new AABB after rotated
 	m_boundingBox = m_hitable->BoundingBox();
 	Vec3 _min(FLT_MAX, FLT_MAX, FLT_MAX);
@@ -195,12 +216,15 @@ RotatedYInstance::RotatedYInstance(IHitable *hitable, float angle)
 		{
 			for (UINT32 k = 0; k < 2; ++k) // 0 or 1
 			{
-				float x = i * m_boundingBox.m_max.x() + (1 - i) * m_boundingBox.m_min.x();
-				float y = i * m_boundingBox.m_max.y() + (1 - i) * m_boundingBox.m_min.y();
-				float z = i * m_boundingBox.m_max.z() + (1 - i) * m_boundingBox.m_min.z();
-				float newx = m_cosTheta * x + m_sinTheta * z;
-				float newz = -m_sinTheta * x + m_cosTheta * z;
-				Vec3 tester(newx, y, newz);
+				float a = i * m_boundingBox.m_max[m_aAxisIndex] + (1 - i) * m_boundingBox.m_min[m_aAxisIndex];
+				float b = j * m_boundingBox.m_max[m_bAxisIndex] + (1 - j) * m_boundingBox.m_min[m_bAxisIndex];
+				float c = k * m_boundingBox.m_max[m_cAxisIndex] + (1 - k) * m_boundingBox.m_min[m_cAxisIndex];
+				float newa= m_cosTheta * a + m_OP * m_sinTheta * b;
+				float newb = -m_OP * m_sinTheta * a + m_cosTheta * b;
+				Vec3 tester;
+				tester.set(m_aAxisIndex, newa);
+				tester.set(m_bAxisIndex, newb);
+				tester.set(m_cAxisIndex, c);
 				for (UINT32 axis = 0; axis < 3; ++axis)
 				{
 					if (tester[axis] > _max[axis])
@@ -214,24 +238,24 @@ RotatedYInstance::RotatedYInstance(IHitable *hitable, float angle)
 	m_boundingBox = AABB(_min, _max);
 }
 
-BOOL RotatedYInstance::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const
+BOOL RotatedInstance::Hit(const Ray &r, float t_min, float t_max, HitRecord &out_rec) const
 {
 	BOOL hitMe = FALSE;
 	Vec3 org = r.m_org;
 	Vec3 dir = r.m_dir;
-	org.set(0, m_cosTheta * r.m_org[0] - m_sinTheta * r.m_org[2]);
-	org.set(2, m_sinTheta * r.m_org[0] + m_cosTheta * r.m_org[2]);
-	dir.set(0, m_cosTheta * r.m_dir[0] - m_sinTheta * r.m_dir[2]);
-	dir.set(2, m_sinTheta * r.m_dir[0] + m_cosTheta * r.m_dir[2]);
+	org.set(m_aAxisIndex, m_cosTheta * r.m_org[m_aAxisIndex] + m_oppositeOP * m_sinTheta * r.m_org[m_bAxisIndex]);
+	org.set(m_bAxisIndex, -m_oppositeOP * m_sinTheta * r.m_org[m_aAxisIndex] + m_cosTheta * r.m_org[m_bAxisIndex]);
+	dir.set(m_aAxisIndex, m_cosTheta * r.m_dir[m_aAxisIndex] + m_oppositeOP * m_sinTheta * r.m_dir[m_bAxisIndex]);
+	dir.set(m_bAxisIndex, -m_oppositeOP * m_sinTheta * r.m_dir[m_aAxisIndex] + m_cosTheta * r.m_dir[m_bAxisIndex]);
 	Ray moved_r(org, dir);
 	if (m_hitable->Hit(moved_r, t_min, t_max, out_rec))
 	{
 		Vec3 pos = out_rec.m_position;
 		Vec3 nor = out_rec.m_normal;
-		pos.set(0, m_cosTheta * out_rec.m_position[0] + m_sinTheta * out_rec.m_position[2]);
-		pos.set(2, -m_sinTheta * out_rec.m_position[0] + m_cosTheta * out_rec.m_position[2]);
-		nor.set(0, m_cosTheta * out_rec.m_normal[0] + m_sinTheta * out_rec.m_normal[2]);
-		nor.set(2, -m_sinTheta * out_rec.m_normal[0] + m_cosTheta * out_rec.m_normal[2]);
+		pos.set(m_aAxisIndex, m_cosTheta * out_rec.m_position[m_aAxisIndex] + m_OP * m_sinTheta * out_rec.m_position[m_bAxisIndex]);
+		pos.set(m_bAxisIndex, -m_OP * m_sinTheta * out_rec.m_position[m_aAxisIndex] + m_cosTheta * out_rec.m_position[m_bAxisIndex]);
+		nor.set(m_aAxisIndex, m_cosTheta * out_rec.m_normal[m_aAxisIndex] + m_OP * m_sinTheta * out_rec.m_normal[m_bAxisIndex]);
+		nor.set(m_bAxisIndex, -m_OP * m_sinTheta * out_rec.m_normal[m_aAxisIndex] + m_cosTheta * out_rec.m_normal[m_bAxisIndex]);
 		out_rec.m_position = pos;
 		out_rec.m_normal = nor;
 		hitMe = TRUE;

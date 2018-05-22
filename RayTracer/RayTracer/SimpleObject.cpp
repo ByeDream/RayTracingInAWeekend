@@ -23,6 +23,31 @@ Object::~Object()
 }
 
 
+void Object::Update(SimpleCamera *camera, float elapsedSeconds)
+{
+	// update constants
+	XMMATRIX scale;
+	XMMATRIX trans;
+	XMMATRIX rotateX;
+	XMMATRIX rotateY;
+	XMMATRIX rotateZ;
+	XMMATRIX mv;
+	GeometryConstants geoConstants;
+
+	trans = DirectX::XMMatrixTranslationFromVector(m_translation.m_simd);
+	scale = DirectX::XMMatrixScalingFromVector(m_scaling.m_simd);
+	rotateX = DirectX::XMMatrixRotationX(m_rotation.x());
+	rotateY = DirectX::XMMatrixRotationY(m_rotation.y());
+	rotateZ = DirectX::XMMatrixRotationZ(m_rotation.z());
+	mv = scale * rotateX * rotateY * rotateZ * trans * camera->GetViewMatrix();
+	// Compute the model-view-projection matrix.
+	DirectX::XMStoreFloat4x4(&geoConstants.worldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
+	DirectX::XMStoreFloat4x4(&geoConstants.worldView, DirectX::XMMatrixTranspose(mv));
+
+	// Copy this matrix into the appropriate location in the geo constant buffer.
+	memcpy(m_d3dRes.m_pGeoConstants + m_d3dRes.m_GeoConstantBufferSize * m_world->GetFrameIndex(), &geoConstants, sizeof(GeometryConstants));
+}
+
 void Object::Render(D3D12Viewer *viewer, UINT32 mid) const
 {
 	if (m_material && m_material->GetID() == mid)
@@ -105,6 +130,7 @@ SimpleObjectSphere::SimpleObjectSphere(const Vec3 &center, float radius, Mesh *m
 {
 	m_translation = center;
 	m_scaling = Vec3(radius, radius, radius);
+	m_rotation = Vec3(0.0f, 0.0f, 0.0f); // no rotation for sphere
 	m_mesh = mesh;
 	m_material = material;
 	m_hitable = new TranslatedInstance(new SphereHitable(Vec3(0.0f, 0.0f, 0.0f),radius), m_translation);
@@ -112,31 +138,13 @@ SimpleObjectSphere::SimpleObjectSphere(const Vec3 &center, float radius, Mesh *m
 	m_world = world;
 }
 
-void SimpleObjectSphere::Update(SimpleCamera *camera, float elapsedSeconds)
-{
-	// update constants
-	XMMATRIX scale;
-	XMMATRIX trans;
-	XMMATRIX mv;
-	GeometryConstants geoConstants;
-
-	trans = DirectX::XMMatrixTranslationFromVector(m_translation.m_simd);
-	scale = DirectX::XMMatrixScalingFromVector(m_scaling.m_simd);
-	mv = scale * trans * camera->GetViewMatrix();
-	// Compute the model-view-projection matrix.
-	DirectX::XMStoreFloat4x4(&geoConstants.worldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
-	DirectX::XMStoreFloat4x4(&geoConstants.worldView, DirectX::XMMatrixTranspose(mv));
-
-	// Copy this matrix into the appropriate location in the geo constant buffer.
-	memcpy(m_d3dRes.m_pGeoConstants + m_d3dRes.m_GeoConstantBufferSize * m_world->GetFrameIndex(), &geoConstants, sizeof(GeometryConstants));
-}
-
-SimpleObjectRect::SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &center, float width, float height, BOOL reverseFace, Mesh *mesh, IMaterial *material, World *world)
+SimpleObjectRect::SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &center, const Vec3 &rotation, float width, float height, BOOL reverseFace, Mesh *mesh, IMaterial *material, World *world)
 	: m_alignAxes(axes)
 	, m_reverseFace(reverseFace)
 {
 	m_translation = center;
 	m_scaling = Vec3(width, height, 1.0f);
+	m_rotation = rotation; // no rotation for rect at moment
 	m_mesh = mesh;
 	m_material = material;
 	m_world = world;
@@ -161,7 +169,17 @@ SimpleObjectRect::SimpleObjectRect(SimpleObjectRectAlignAxes axes, const Vec3 &c
 	Vec3 half;
 	half.set(aAxisIndex, width / 2.0f);
 	half.set(bAxisIndex, height / 2.0f);
-	m_hitable = new TranslatedInstance(new AxisAlignedRectHitable(aAxisIndex, bAxisIndex, -half[aAxisIndex], half[aAxisIndex], -half[bAxisIndex], half[bAxisIndex], 0.0f, m_reverseFace), m_translation);
+
+	m_hitable = new TranslatedInstance(
+		new RotatedInstance(
+			new RotatedInstance(
+				new RotatedInstance(
+					new AxisAlignedRectHitable(aAxisIndex, bAxisIndex, -half[aAxisIndex], half[aAxisIndex], -half[bAxisIndex], half[bAxisIndex], 0.0f, m_reverseFace),
+					m_rotation[0], 0),
+				m_rotation[1], 1),
+			m_rotation[2], 2),
+		m_translation);
+
 	m_hitable->BindMaterial(material);
 }
 
@@ -169,6 +187,9 @@ void SimpleObjectRect::Update(SimpleCamera *camera, float elapsedSeconds)
 {
 	XMMATRIX scale;
 	XMMATRIX rotate;
+	XMMATRIX rotateX;
+	XMMATRIX rotateY;
+	XMMATRIX rotateZ;
 	XMMATRIX trans;
 	XMMATRIX mv;
 	GeometryConstants geoConstants;
@@ -208,17 +229,14 @@ void SimpleObjectRect::Update(SimpleCamera *camera, float elapsedSeconds)
 		break;
 	}
 
-	//rotate = DirectX::XMMatrixRotationX((float)M_PI / 2.0f);
-
-	/*
-	XMMATRIX    XM_CALLCONV     XMMatrixRotationX(float Angle);
-	XMMATRIX    XM_CALLCONV     XMMatrixRotationY(float Angle);
-	XMMATRIX    XM_CALLCONV     XMMatrixRotationZ(float Angle);
-	*/
-
 	trans = DirectX::XMMatrixTranslationFromVector(m_translation.m_simd);
 	scale = DirectX::XMMatrixScalingFromVector(m_scaling.m_simd);
-	mv = scale * rotate * trans * camera->GetViewMatrix();
+
+	rotateX = DirectX::XMMatrixRotationX(m_rotation.x());
+	rotateY = DirectX::XMMatrixRotationY(m_rotation.y());
+	rotateZ = DirectX::XMMatrixRotationZ(m_rotation.z());
+
+	mv = scale * rotate * rotateX * rotateY * rotateZ * trans * camera->GetViewMatrix();
 	// Compute the model-view-projection matrix.
 	DirectX::XMStoreFloat4x4(&geoConstants.worldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
 	DirectX::XMStoreFloat4x4(&geoConstants.worldView, DirectX::XMMatrixTranspose(mv));
@@ -228,10 +246,11 @@ void SimpleObjectRect::Update(SimpleCamera *camera, float elapsedSeconds)
 
 }
 
-SimpleObjectCube::SimpleObjectCube(const Vec3 &center, const Vec3 &size, Mesh *mesh, IMaterial *material, World *world)
+SimpleObjectCube::SimpleObjectCube(const Vec3 &center, const Vec3 &rotation, const Vec3 &size, Mesh *mesh, IMaterial *material, World *world)
 {
 	m_translation = center;
 	m_scaling = size;
+	m_rotation = rotation;
 	m_mesh = mesh;
 	m_material = material;
 	m_world = world;
@@ -246,7 +265,16 @@ SimpleObjectCube::SimpleObjectCube(const Vec3 &center, const Vec3 &size, Mesh *m
 	m_faceList[4] = new AxisAlignedRectHitable(2, 1, _min.z(), _max.z(), _min.y(), _max.y(), _max.x(), FALSE); // right
 	m_faceList[5] = new AxisAlignedRectHitable(2, 1, _min.z(), _max.z(), _min.y(), _max.y(), _min.x(), TRUE); // left
 
-	m_hitable = new TranslatedInstance(new RotatedYInstance( new HitableCombo(&m_faceList[0], 6), 3.14f / 4.0f), m_translation);
+	m_hitable = new TranslatedInstance(
+		new RotatedInstance(
+			new RotatedInstance(
+				new RotatedInstance(
+					new HitableCombo(&m_faceList[0], 6), 
+					m_rotation[0], 0),
+				m_rotation[1], 1),
+			m_rotation[2], 2),
+		m_translation);
+
 	m_hitable->BindMaterial(material);
 }
 
@@ -260,25 +288,6 @@ SimpleObjectCube::~SimpleObjectCube()
 			m_faceList[i] = nullptr;
 		}
 	}
-}
-
-void SimpleObjectCube::Update(SimpleCamera *camera, float elapsedSeconds)
-{
-	// update constants
-	XMMATRIX scale;
-	XMMATRIX trans;
-	XMMATRIX mv;
-	GeometryConstants geoConstants;
-
-	trans = DirectX::XMMatrixTranslationFromVector(m_translation.m_simd);
-	scale = DirectX::XMMatrixScalingFromVector(m_scaling.m_simd);
-	mv = scale * trans * camera->GetViewMatrix();
-	// Compute the model-view-projection matrix.
-	DirectX::XMStoreFloat4x4(&geoConstants.worldViewProj, DirectX::XMMatrixTranspose(mv * camera->GetProjectionMatrix()));
-	DirectX::XMStoreFloat4x4(&geoConstants.worldView, DirectX::XMMatrixTranspose(mv));
-
-	// Copy this matrix into the appropriate location in the geo constant buffer.
-	memcpy(m_d3dRes.m_pGeoConstants + m_d3dRes.m_GeoConstantBufferSize * m_world->GetFrameIndex(), &geoConstants, sizeof(GeometryConstants));
 }
 
 SimpleObjectBVHNode::SimpleObjectBVHNode(std::vector<Object *> objects)
