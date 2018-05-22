@@ -194,4 +194,16 @@ void Resources::LoadMaterials()
 	// MATERIAL_ID_LIGHTSOURCE_BLUE
 	material = new DiffuseLight(Vec3(0.0f, 0.0f, 4.0f));
 	m_materials.push_back(material);
+
+	// MATERIAL_ID_CORNELL_BALL1
+	texture = new SimpleTexture2D_SingleColor(Vec3(0.19f, 0.2f, 0.14f));
+	m_textures.push_back(texture);
+	material = new Lambertian(texture);
+	m_materials.push_back(material);
+
+	// MATERIAL_ID_CORNELL_BALL2
+	texture = new SimpleTexture2D_SingleColor(Vec3(0.26f, 0.06f, 0.06f));
+	m_textures.push_back(texture);
+	material = new Metal(texture, 0.20f);
+	m_materials.push_back(material);
 }
